@@ -1,0 +1,10 @@
+[2026-02-04 10:39:07] [CONFIG] gespeichert
+[2026-02-04 10:39:07] [DB] queue.position Spalte hinzugefügt und initialisiert
+[2026-02-04 10:39:07] [WARN] AniLoader.txt nicht gefunden: C:\Users\wroehner\Desktop\Git\AniLoader Test\AniLoader.txt
+[2026-02-04 10:39:07] [CHECK] Prüfe Pfad: C:\Users\wroehner\Desktop\Git\AniLoader Test\Downloads - 0 Ordner gefunden
+[2026-02-04 10:39:07] [CHECK] Gefundene complete-Animes in DB: 0
+[2026-02-04 10:39:07] [CHECK] Gefundene lokale Animes (gesamt): 0
+[2026-02-04 10:39:07] [INFO] Gelöschte Animes: []
+[2026-02-04 10:39:07] [DB] Titel-Refresh abgeschlossen. Aktualisiert: 0
+[2026-02-04 10:39:07] [SYSTEM] AniLoader API starting...
+[2026-02-04 10:39:07] [CONFIG] geladen: languages=['German Dub', 'German Sub', 'English Dub', 'English Sub'] min_free_gb=2.0 autostart_mode=None data_folder=C:\Users\wroehner\Desktop\Git\AniLoader Test\data

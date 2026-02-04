@@ -1,0 +1,23 @@
+{
+  "languages": [
+    "German Dub",
+    "German Sub",
+    "English Dub",
+    "English Sub"
+  ],
+  "min_free_gb": 2.0,
+  "download_path": "C:\\Users\\wroehner\\Desktop\\Git\\AniLoader Test\\Downloads",
+  "storage_mode": "standard",
+  "movies_path": "",
+  "series_path": "",
+  "anime_path": "",
+  "serien_path": "",
+  "anime_separate_movies": false,
+  "serien_separate_movies": false,
+  "anime_movies_path": "",
+  "serien_movies_path": "",
+  "port": 5050,
+  "autostart_mode": null,
+  "refresh_titles": true,
+  "data_folder_path": "C:\\Users\\wroehner\\Desktop\\Git\\AniLoader Test\\data"
+}
