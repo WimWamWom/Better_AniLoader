@@ -30,27 +30,32 @@ def after_request(response):
     return response
 
 # -------------------- Konfiguration --------------------
-config_data = load_config()
-if not config_data:
-    print("Fehler beim Laden der Konfiguration. Bitte überprüfen Sie die config.json.")
-    exit(1)
+def import_config_data(print_enabled: bool = True)-> bool:
+    global LANGUAGES, MIN_FREE_GB, PORT, DOWNLOAD_PATH, STORAGE_MODE, ANIME_SEPARATE_MOVIES, SERIEN_SEPARATE_MOVIES, MOVIES_PATH, SERIES_PATH, ANIME_PATH, ANIME_MOVIES_PATH, SERIEN_MOVIES_PATH, AUTOSTART_MODENUL, REFRESH_TITLES, DATA_FOLDER_PATH
+    config_data = load_config()
+    if not config_data:
+        print("Fehler beim Laden der Konfiguration. Bitte überprüfen Sie die config.json.")
+        return False
 
-
-LANGUAGES = config_data.get('languages')   
-MIN_FREE_GB = config_data.get('min_free_gb')
-PORT = config_data.get('port')
-DOWNLOAD_PATH = config_data.get('download_path')
-STORAGE_MODE = config_data.get('storage_mode')
-ANIME_SEPARATE_MOVIES = config_data.get('anime_separate_movies')
-SERIEN_SEPARATE_MOVIES = config_data.get('serien_separate_movies')
-MOVIES_PATH = config_data.get('movies_path')
-SERIES_PATH = config_data.get('series_path')
-ANIME_PATH = config_data.get('anime_path')
-ANIME_MOVIES_PATH = config_data.get('anime_movies_path')
-SERIEN_MOVIES_PATH = config_data.get('serien_movies_path')
-AUTOSTART_MODENUL = config_data.get('autostart_modenul')
-REFRESH_TITLES = config_data.get('refresh_titles')
-DATA_FOLDER_PATH = config_data.get('data_folder_path')
+    LANGUAGES = config_data.get('languages')   
+    MIN_FREE_GB = config_data.get('min_free_gb')
+    PORT = config_data.get('port')
+    DOWNLOAD_PATH = config_data.get('download_path')
+    STORAGE_MODE = config_data.get('storage_mode')
+    ANIME_SEPARATE_MOVIES = config_data.get('anime_separate_movies')
+    SERIEN_SEPARATE_MOVIES = config_data.get('serien_separate_movies')
+    MOVIES_PATH = config_data.get('movies_path')
+    SERIES_PATH = config_data.get('series_path')
+    ANIME_PATH = config_data.get('anime_path')
+    ANIME_MOVIES_PATH = config_data.get('anime_movies_path')
+    SERIEN_MOVIES_PATH = config_data.get('serien_movies_path')
+    AUTOSTART_MODENUL = config_data.get('autostart_modenul')
+    REFRESH_TITLES = config_data.get('refresh_titles')
+    DATA_FOLDER_PATH = config_data.get('data_folder_path')
+    if print_enabled:
+        print(f"Konfiguration erfolgreich geladen. Aktuelle Werte:")
+        print(json.dumps(config_data, indent=2, ensure_ascii=False))
+    return True
 
 
 
@@ -92,12 +97,13 @@ def check_new_german(episode_url: str) -> bool:
 
 
 if __name__ == "__main__":
-    # CLI-Modus für Entwicklung/Testing
     start = time.perf_counter()
-    print(json.dumps(config_data, indent=2, ensure_ascii=False))
-    test_cli = True
+    if import_config_data(print_enabled=True) is False:
+        exit(1)
+
+    test_mode = False
     
-    if test_cli:
+    if test_mode:
         test_urls = [
         #    "https://s.to/serie/the-rookie",
         #    "https://s.to/serie/die-drachenreiter-von-berk",
@@ -109,7 +115,7 @@ if __name__ == "__main__":
         # Flask Server starten
         print(f"Starting Better_AniLoader Server on port {PORT}...")
         print(f"API available at http://localhost:{PORT}")
-        app.run(host="0.0.0.0", port=PORT, debug=True, threaded=True)
+        app.run(host="0.0.0.0", port=PORT, debug=False, threaded=True)
 
 
             
