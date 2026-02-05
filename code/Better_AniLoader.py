@@ -1,5 +1,5 @@
 import time
-from flask import Flask
+from flask import Flask, json
 from flask_cors import CORS
 from html_request import get_seasons_with_episode_count, get_languages_for_episode
 from url_build import get_episode_url
@@ -7,10 +7,6 @@ from API_Endpoints import api
 from config import load_config
 
 
-config_data = load_config()
-if not config_data:
-    print("Fehler beim Laden der Konfiguration. Bitte überprüfen Sie die config.json.")
-    exit(1)
 
 # -------------------- Flask App Setup --------------------
 app = Flask(__name__)
@@ -34,18 +30,32 @@ def after_request(response):
     return response
 
 # -------------------- Konfiguration --------------------
-languages = config_data.get("languages", [
-    "German Dub",
-    "German Sub",
-    "English Dub",
-    "English Sub",
-])
+config_data = load_config()
+if not config_data:
+    print("Fehler beim Laden der Konfiguration. Bitte überprüfen Sie die config.json.")
+    exit(1)
 
+
+LANGUAGES = config_data.get('languages')   
+MIN_FREE_GB = config_data.get('min_free_gb')
+PORT = config_data.get('port')
+DOWNLOAD_PATH = config_data.get('download_path')
+STORAGE_MODE = config_data.get('storage_mode')
+ANIME_SEPARATE_MOVIES = config_data.get('anime_separate_movies')
+SERIEN_SEPARATE_MOVIES = config_data.get('serien_separate_movies')
+MOVIES_PATH = config_data.get('movies_path')
+SERIES_PATH = config_data.get('series_path')
+ANIME_PATH = config_data.get('anime_path')
+ANIME_MOVIES_PATH = config_data.get('anime_movies_path')
+SERIEN_MOVIES_PATH = config_data.get('serien_movies_path')
+AUTOSTART_MODENUL = config_data.get('autostart_modenul')
+REFRESH_TITLES = config_data.get('refresh_titles')
+DATA_FOLDER_PATH = config_data.get('data_folder_path')
 
 
 
 def CLI_download(url: str, german_only: bool = False) -> int:
-    if languages[0] != "German Dub" and german_only:
+    if LANGUAGES[0] != "German Dub" and german_only:
         return -1
     seasons = get_seasons_with_episode_count(url)
     if seasons == -1:
@@ -58,14 +68,14 @@ def CLI_download(url: str, german_only: bool = False) -> int:
             if sprachen != -1:
                 if german_only and "German Dub" not in sprachen:
                     continue
-                if languages[0] in sprachen:
-                    sprache = languages[0]
-                elif languages[1] in sprachen:
-                    sprache = languages[1]
-                elif languages[2] in sprachen:
-                    sprache = languages[2]
-                elif languages[3] in sprachen:
-                    sprache = languages[3]
+                if LANGUAGES[0] in sprachen:
+                    sprache = LANGUAGES[0]
+                elif LANGUAGES[1] in sprachen:
+                    sprache = LANGUAGES[1]
+                elif LANGUAGES[2] in sprachen:
+                    sprache = LANGUAGES[2]
+                elif LANGUAGES[3] in sprachen:
+                    sprache = LANGUAGES[3]
                 else:
                     return -1
                 print("aniworld", "--language", sprache, "-o", "C:\\Users\\wroehner\\Desktop\\Git\\AniLoader Test\\Downloads", "--episode", episode_url)
@@ -83,25 +93,26 @@ def check_new_german(episode_url: str) -> bool:
 
 if __name__ == "__main__":
     # CLI-Modus für Entwicklung/Testing
-    print(config_data)
+    start = time.perf_counter()
+    print(json.dumps(config_data, indent=2, ensure_ascii=False))
     test_cli = True
     
     if test_cli:
-        start = time.perf_counter()
         test_urls = [
-                        "https://s.to/serie/the-rookie",
-                        "https://s.to/serie/die-drachenreiter-von-berk",
-                     ]
+        #    "https://s.to/serie/the-rookie",
+        #    "https://s.to/serie/die-drachenreiter-von-berk",
+                    ]
         for url in test_urls:
             CLI_download(url=url)
-        elapsed = time.perf_counter() - start
-        print(f"Elapsed: {elapsed:.2f}s")
-
-
-
+        
     else:
         # Flask Server starten
-        PORT = config_data.get("port")
         print(f"Starting Better_AniLoader Server on port {PORT}...")
         print(f"API available at http://localhost:{PORT}")
         app.run(host="0.0.0.0", port=PORT, debug=True, threaded=True)
+
+
+            
+    elapsed = time.perf_counter() - start
+    print(f"Elapsed: {elapsed:.2f}s")
+
