@@ -1,6 +1,4 @@
-from flask import Blueprint, request, jsonify, send_file
-from pathlib import Path
-import json
+from flask import Blueprint, request, jsonify
 
 # Blueprint erstellen
 api = Blueprint('api', __name__)
