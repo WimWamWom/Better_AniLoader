@@ -1,8 +1,6 @@
 from pathlib import Path
 import os
 import json
-import threading
-
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 DOWNLOAD_DIR = BASE_DIR / "Downloads"
@@ -27,7 +25,6 @@ standart_werte = {
         "refresh_titles": False,
         "data_folder_path": str(DATA_DIR)
     }
-
 
 
 def ceck_and_init_config() -> bool:
