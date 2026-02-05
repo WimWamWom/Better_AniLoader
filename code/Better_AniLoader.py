@@ -4,6 +4,7 @@ from flask_cors import CORS
 from html_request import get_seasons_with_episode_count, get_languages_for_episode
 from url_build import get_episode_url
 from API_Endpoints import api
+from config import SERVER_PORT
 
 # -------------------- Flask App Setup --------------------
 app = Flask(__name__)
@@ -33,7 +34,7 @@ languages = [
     "English Dub",
     "English Sub",
 ]
-SERVER_PORT = 5050
+
 
 
 
