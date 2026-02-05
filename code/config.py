@@ -5,19 +5,12 @@ import threading
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-DATA_FOLDER = BASE_DIR / "data"
-CONFIG_PATH = DATA_FOLDER / 'config.json'
-os.makedirs(DATA_FOLDER, exist_ok=True)
+DOWNLOAD_DIR = BASE_DIR / "Downloads"
+DATA_DIR = BASE_DIR / "data"
+CONFIG_PATH = DATA_DIR / 'config.json'
+os.makedirs(DATA_DIR, exist_ok=True)
 
-def ceck_and_init_config() -> bool:
-    """
-    Prüft, ob alle benötigten Schlüssel in config_json vorhanden sind und ergänzt fehlende mit Standardwerten.
-    Legt eine neue config.json mit Standardwerten an, falls die Datei leer oder ungültig ist.
-    Gibt True zurück, wenn Änderungen vorgenommen wurden, sonst False.
-    """
-    DOWNLOAD_DIR = BASE_DIR / "Downloads"
-
-    standart_werte = {
+standart_werte = {
         "languages": ["German Dub", "German Sub", "English Dub", "English Sub"],
         "min_free_gb": 100.0,
         "port": 5050,
@@ -32,8 +25,17 @@ def ceck_and_init_config() -> bool:
         "serien_movies_path": str(Path(DOWNLOAD_DIR) / "Filme-Serien"),
         "autostart_mode": None,
         "refresh_titles": False,
-        "data_folder_path": str(DATA_FOLDER)
+        "data_folder_path": str(DATA_DIR)
     }
+
+
+
+def ceck_and_init_config() -> bool:
+    """
+    Prüft, ob alle benötigten Schlüssel in config_json vorhanden sind und ergänzt fehlende mit Standardwerten.
+    Legt eine neue config.json mit Standardwerten an, falls die Datei leer oder ungültig ist.
+    Gibt True zurück, wenn Änderungen vorgenommen wurden, sonst False.
+    """
     complete = True
     try:
         if not CONFIG_PATH.exists() or CONFIG_PATH.stat().st_size == 0:
@@ -143,12 +145,3 @@ def save_config(config_json: dict) -> bool:
     except Exception as exception:
         print(f"[CONFIG-ERROR] save_config: {exception}")
         return False
-
-
-
-
-
-if __name__ == "__main__": 
-    config_json = load_config()
-    if config_json:
-        print(json.dumps(config_json, indent=2, ensure_ascii=False))
