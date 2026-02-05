@@ -4,7 +4,13 @@ from flask_cors import CORS
 from html_request import get_seasons_with_episode_count, get_languages_for_episode
 from url_build import get_episode_url
 from API_Endpoints import api
-from config import SERVER_PORT
+from config import load_config
+
+
+config_data = load_config()
+if not config_data:
+    print("Fehler beim Laden der Konfiguration. Bitte überprüfen Sie die config.json.")
+    exit(1)
 
 # -------------------- Flask App Setup --------------------
 app = Flask(__name__)
@@ -28,12 +34,12 @@ def after_request(response):
     return response
 
 # -------------------- Konfiguration --------------------
-languages = [
+languages = config_data.get("languages", [
     "German Dub",
     "German Sub",
     "English Dub",
     "English Sub",
-]
+])
 
 
 
@@ -77,6 +83,7 @@ def check_new_german(episode_url: str) -> bool:
 
 if __name__ == "__main__":
     # CLI-Modus für Entwicklung/Testing
+    print(config_data)
     test_cli = True
     
     if test_cli:
@@ -89,8 +96,12 @@ if __name__ == "__main__":
             CLI_download(url=url)
         elapsed = time.perf_counter() - start
         print(f"Elapsed: {elapsed:.2f}s")
+
+
+
     else:
         # Flask Server starten
-        print(f"Starting Better_AniLoader Server on port {SERVER_PORT}...")
-        print(f"API available at http://localhost:{SERVER_PORT}")
-        app.run(host="0.0.0.0", port=SERVER_PORT, debug=True, threaded=True)
+        PORT = config_data.get("port")
+        print(f"Starting Better_AniLoader Server on port {PORT}...")
+        print(f"API available at http://localhost:{PORT}")
+        app.run(host="0.0.0.0", port=PORT, debug=True, threaded=True)
