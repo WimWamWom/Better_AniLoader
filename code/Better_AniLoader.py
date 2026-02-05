@@ -101,15 +101,15 @@ if __name__ == "__main__":
     if import_config_data(print_enabled=True) is False:
         exit(1)
 
-    test_mode = False
+    test_mode = True
     
     if test_mode:
         test_urls = [
-        #    "https://s.to/serie/the-rookie",
-        #    "https://s.to/serie/die-drachenreiter-von-berk",
+            "https://s.to/serie/the-rookie",
+            "https://s.to/serie/die-drachenreiter-von-berk",
                     ]
         for url in test_urls:
-            CLI_download(url=url)
+            CLI_download(url=url, german_only=False)
         
     else:
         # Flask Server starten
