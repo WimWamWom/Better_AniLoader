@@ -37,27 +37,51 @@ def import_config_data(print_enabled: bool = True)-> bool:
         print("Fehler beim Laden der Konfiguration. Bitte überprüfen Sie die config.json.")
         return False
 
-    LANGUAGES = config_data.get('languages')   
-    MIN_FREE_GB = config_data.get('min_free_gb')
-    PORT = config_data.get('port')
-    DOWNLOAD_PATH = config_data.get('download_path')
-    STORAGE_MODE = config_data.get('storage_mode')
-    ANIME_SEPARATE_MOVIES = config_data.get('anime_separate_movies')
-    SERIEN_SEPARATE_MOVIES = config_data.get('serien_separate_movies')
-    MOVIES_PATH = config_data.get('movies_path')
-    SERIES_PATH = config_data.get('series_path')
-    ANIME_PATH = config_data.get('anime_path')
-    ANIME_MOVIES_PATH = config_data.get('anime_movies_path')
-    SERIEN_MOVIES_PATH = config_data.get('serien_movies_path')
-    AUTOSTART_MODENUL = config_data.get('autostart_modenul')
-    REFRESH_TITLES = config_data.get('refresh_titles')
-    DATA_FOLDER_PATH = config_data.get('data_folder_path')
+    LANGUAGES = config_data.get('languages') 
+    MIN_FREE_GB = int(config_data.get('min_free_gb'))
+    PORT = int(config_data.get('port'))
+    DOWNLOAD_PATH = str(config_data.get('download_path'))
+    STORAGE_MODE = str(config_data.get('storage_mode'))
+    ANIME_SEPARATE_MOVIES = bool(config_data.get('anime_separate_movies'))
+    SERIEN_SEPARATE_MOVIES = bool(config_data.get('serien_separate_movies'))
+    MOVIES_PATH = str(config_data.get('movies_path'))
+    SERIES_PATH = str(config_data.get('series_path'))
+    ANIME_PATH = str(config_data.get('anime_path'))
+    ANIME_MOVIES_PATH = str(config_data.get('anime_movies_path'))
+    SERIEN_MOVIES_PATH = str(config_data.get('serien_movies_path'))
+    AUTOSTART_MODENUL = str(config_data.get('autostart_modenul'))
+    REFRESH_TITLES = bool(config_data.get('refresh_titles'))
+    DATA_FOLDER_PATH = str(config_data.get('data_folder_path'))
     if print_enabled:
         print(f"Konfiguration erfolgreich geladen. Aktuelle Werte:")
         print(json.dumps(config_data, indent=2, ensure_ascii=False))
     return True
 
-
+def get_output_path(staffel: str, url: str) -> str:
+    if STORAGE_MODE == "standard":
+        return DOWNLOAD_PATH
+    elif STORAGE_MODE == "separate":
+        if "https://s.to/" in url:
+            if staffel.strip().lower() == "0":
+                if SERIEN_SEPARATE_MOVIES:
+                    return SERIEN_MOVIES_PATH
+                elif SERIEN_SEPARATE_MOVIES is False:
+                    return MOVIES_PATH
+            else:
+                return SERIES_PATH
+            
+        
+        elif "https://aniworld.to/" in url:
+            if staffel.strip().lower() == "filme":
+                if ANIME_SEPARATE_MOVIES:  
+                    return ANIME_MOVIES_PATH
+                elif ANIME_SEPARATE_MOVIES is False:
+                    return MOVIES_PATH
+            else:
+                return ANIME_PATH
+    print(f"Ungültige URL oder Staffel: {url} Staffel: {staffel}. Rückfall auf Standard-Downloadpfad.")       
+    return DOWNLOAD_PATH
+    
 
 def CLI_download(url: str, german_only: bool = False) -> int:
     if LANGUAGES[0] != "German Dub" and german_only:
@@ -67,6 +91,7 @@ def CLI_download(url: str, german_only: bool = False) -> int:
         print("Error retrieving seasons or episodes.")
         return 1
     for season in seasons:
+        output_path = get_output_path(season, url)
         for episode in seasons[season]:
             episode_url = get_episode_url(url, season, episode)
             sprachen = get_languages_for_episode(episode_url)
@@ -83,7 +108,7 @@ def CLI_download(url: str, german_only: bool = False) -> int:
                     sprache = LANGUAGES[3]
                 else:
                     return -1
-                print("aniworld", "--language", sprache, "-o", "C:\\Users\\wroehner\\Desktop\\Git\\AniLoader Test\\Downloads", "--episode", episode_url)
+                print("aniworld", "--language", sprache, "-o", output_path, "--episode", episode_url)
             else:
                 print(f"Could not retrieve languages for episode: {episode_url}")
     return 0 
@@ -98,15 +123,16 @@ def check_new_german(episode_url: str) -> bool:
 
 if __name__ == "__main__":
     start = time.perf_counter()
-    if import_config_data(print_enabled=True) is False:
+    if import_config_data(print_enabled=False) is False:
         exit(1)
 
     test_mode = True
     
     if test_mode:
         test_urls = [
-            "https://s.to/serie/the-rookie",
-            "https://s.to/serie/die-drachenreiter-von-berk",
+            "https://s.to/serie/seishun-buta-yarou-wa-bunny-girl-senpai-no-yume-o-minai",
+#            "https://s.to/serie/the-rookie",
+#            "https://s.to/serie/die-drachenreiter-von-berk",
                     ]
         for url in test_urls:
             CLI_download(url=url, german_only=False)

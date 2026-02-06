@@ -98,3 +98,34 @@ def get_languages_for_episode(episode_url: str):
     else:
         return -1
     return sprachen
+
+def get_series_title(url):
+    try:
+
+        staffel_html = requests.get(url, headers=headers, timeout=10)
+        staffel_html.raise_for_status()
+        soup = BeautifulSoup(staffel_html.text, "html.parser")
+        title_elem = (
+            soup.select_one("div.series-title h1 span")
+            or soup.select_one("div.series-title h1")
+            or soup.select_one("h1.h2.mb-1.fw-bold")
+        )
+        if title_elem and title_elem.text and title_elem.text.strip():
+            return title_elem.text.strip()
+    except Exception as e:
+        print(f"[FEHLER] Konnte Serien-Titel nicht abrufen ({url}): {e}")
+
+def get_title_for_episode(episode_url: str):
+    episode_html = requests.get(episode_url, headers=headers, timeout=5)
+    episode_html.raise_for_status()
+    soup = BeautifulSoup(episode_html.text, "html.parser")
+    title = None
+    if "https://s.to/" in episode_url:
+        title_tag = soup.find("h1", class_="title")
+        if title_tag:
+            title = title_tag.get_text(strip=True)
+    elif "https://aniworld.to/" in episode_url:
+        title_tag = soup.find("h1", class_="title")
+        if title_tag:
+            title = title_tag.get_text(strip=True)
+    return title

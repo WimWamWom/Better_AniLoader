@@ -16,7 +16,8 @@
   "anime_path": "C:\\Users\\wroehner\\Desktop\\Git\\Better_AniLoader\\Downloads\\Anime",
   "anime_movies_path": "C:\\Users\\wroehner\\Desktop\\Git\\Better_AniLoader\\Downloads\\Filme-Anime",
   "serien_movies_path": "C:\\Users\\wroehner\\Desktop\\Git\\Better_AniLoader\\Downloads\\Filme-Serien",
-  "autostart_mode": "null",
+  "autostart_mode": null,
   "refresh_titles": false,
-  "data_folder_path": "C:\\Users\\wroehner\\Desktop\\Git\\Better_AniLoader\\data"
+  "data_folder_path": "C:\\Users\\wroehner\\Desktop\\Git\\Better_AniLoader\\data",
+  "serien_path": ""
 }
