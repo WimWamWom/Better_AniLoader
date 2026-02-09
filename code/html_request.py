@@ -118,7 +118,7 @@ def get_series_title(url):
     except Exception as e:
         print(f"[FEHLER] Konnte Serien-Titel nicht abrufen ({url}): {e}")
 
-def get_episode_title(episode_url: str):
+def get_episode_title(episode_url: str, new_german: bool = False):
     episode_html = requests.get(episode_url, headers=headers, timeout=5)
     episode_html.raise_for_status()
     soup = BeautifulSoup(episode_html.text, "html.parser")
@@ -130,7 +130,7 @@ def get_episode_title(episode_url: str):
             cleaned = re.sub(r'^S\d{2}E\d{2}:\s*', '', title_element)
             sprachen = get_languages_for_episode(episode_url)
             if sprachen != -1:
-                if "German Dub" in sprachen:
+                if "German Dub" in sprachen and new_german == False:
                     cleaned = re.sub(r'\s*\([^)]*\)\s*$', '', cleaned)
                 else:
                     cleaned = cleaned.replace('(', '').replace(')', '')
@@ -139,10 +139,11 @@ def get_episode_title(episode_url: str):
 
     elif "https://aniworld.to/" in episode_url:
         # Suche nach deutschem Titel in <span class="episodeGermanTitle">
-        title_tag = soup.find("span", class_="episodeGermanTitle")
-        if title_tag:
-            title = sanitize_episode_title(title_tag.get_text(strip=True))
-            return title
+        if new_german:
+            title_tag = soup.find("span", class_="episodeGermanTitle")
+            if title_tag:
+                title = sanitize_episode_title(title_tag.get_text(strip=True))
+                return title
         # Fallback: englischer Titel in <small class="episodeEnglishTitle">
         title_tag = soup.find("small", class_="episodeEnglishTitle")
         if title_tag:

@@ -6,13 +6,10 @@ from config import load_config
 from url_build import get_episode_url
 
 # ============================================================================
-# DATEI-SUCHE UND -PRÜFUNG
+# Dateinamen und Pfade generieren
 # ============================================================================
 
 
-# ============================================================================
-# DATEI-VERWALTUNG (Umbenennen, Verschieben, Löschen)
-# ============================================================================
 def get_folder_path(staffel: str, url: str) -> str:
     config = load_config()
     if not config:  
@@ -62,7 +59,7 @@ def get_folder_path(staffel: str, url: str) -> str:
     print(f"Ungültige URL oder Staffel: {url} Staffel: {staffel}. Rückfall auf Standard-Downloadpfad.")       
     return DOWNLOAD_PATH
 
-def get_file_path(serien_url: str, season: str, episode: str):
+def get_file_path(serien_url: str, season: str, episode: str, new_german: bool = False):
     folder_path = get_folder_path(season, serien_url)
     series_title = get_series_title(serien_url)
 
@@ -121,6 +118,41 @@ def get_file_name(serien_url: str, season: str, episode: str):
 
     return file_name
 
+# ============================================================================
+# DATEI-ÜBERPRÜFUNG
+# ============================================================================
+
+def check_if_file_allready_exists(serien_url: str, season: str, episode: str) -> bool:
+    file_path = get_file_path(serien_url, season, episode)
+    if file_path.is_file():
+        return True
+    file_path = get_file_path(serien_url, season, episode, new_german=True)
+    if file_path.is_file():
+        return True
+    return False
+
+def check_if_download_complete(serien_url: str, season: str, episode: str) -> bool:
+    config = load_config()
+    if not config:
+        print("Fehler beim Laden der Konfiguration.")
+        return False
+    download_path = config.get('download_path')
+    base_path = Path(download_path)
+    # Erzeuge das Namensmuster (SXXEXX oder FilmXXX)
+    if season.strip().lower() == "0" or season.strip().lower() == "filme":
+        prefix = f"Film{int(episode):03d}"
+    else:
+        prefix = f"S{int(season):02d}E{int(episode):03d}"
+    # Suche nach einer Datei, die mit dem Prefix beginnt und auf .mp4 endet
+    for file in base_path.glob(f"{prefix}*.mp4"):
+        if file.is_file():
+            return True
+    return False
+
+# ============================================================================
+# DATEI-VERWALTUNG (Umbenennen, Verschieben, Löschen)
+# ============================================================================
+
 def rename_downloaded_file(
     series_folder: Path,
     season: int,
@@ -145,31 +177,22 @@ def rename_downloaded_file(
     """
     # Implementierung hier
 
-def delete_old_non_german_versions(
-    series_folder: Path,
-    season: int,
-    episode: int,
-    in_dedicated_movies_folder: bool = False
-) :
-    """
-    Löscht alle nicht-deutschen Versionen einer Episode.
-    
-    Wenn eine deutsche Version (Dub oder Sub) heruntergeladen wurde,
-    werden englische Versionen automatisch gelöscht.
-    
-    Args:
-        series_folder: Hauptordner der Serie/des Animes
-        season: Staffelnummer (0 für Filme)
-        episode: Episodennummer
-        in_dedicated_movies_folder: True, wenn Filme separat gespeichert werden
-    
-    Returns:
-        Anzahl der gelöschten Dateien
-    
-    Beispiele:
-        >>> delete_old_non_german_versions(Path("Downloads/Naruto"), 1, 5)
-        2  # 2 englische Versionen gelöscht
-    """
+def delete_old_non_german_version(serien_url: str, season: str, episode: str) :
+    file_path = get_file_path(serien_url, season, episode)
+    if file_path.is_file():
+        try:
+            file_path.unlink()
+            print(f"✓ Alte Datei gelöscht: {file_path.name}")
+        except Exception as e:
+            print(f"✗ Fehler beim Löschen der alten Datei: {e}")
+    file_path = get_file_path(serien_url, season, episode, new_german=True)
+    if file_path.is_file():
+        try:
+            file_path.unlink()
+            print(f"✓ Alte Datei gelöscht: {file_path.name}")
+        except Exception as e:
+            print(f"✗ Fehler beim Löschen der alten Datei: {e}")
+
 
 def move_file(source: Path, destination: Path) -> bool:
     """
