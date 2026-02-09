@@ -1,7 +1,9 @@
 from typing import List, Dict
 import requests
+import re
 from bs4 import BeautifulSoup
 from url_build import get_season_url
+from helper import sanitize_episode_title, sanitize_title
 
 headers = {"User-Agent": "Mozilla/5.0 (compatible; AniLoaderBot/1.0)"}
 
@@ -111,21 +113,35 @@ def get_series_title(url):
             or soup.select_one("h1.h2.mb-1.fw-bold")
         )
         if title_elem and title_elem.text and title_elem.text.strip():
-            return title_elem.text.strip()
+            title = sanitize_title(str(title_elem.text.strip()))
+            return title
     except Exception as e:
         print(f"[FEHLER] Konnte Serien-Titel nicht abrufen ({url}): {e}")
 
-def get_title_for_episode(episode_url: str):
+def get_episode_title(episode_url: str):
     episode_html = requests.get(episode_url, headers=headers, timeout=5)
     episode_html.raise_for_status()
     soup = BeautifulSoup(episode_html.text, "html.parser")
     title = None
     if "https://s.to/" in episode_url:
-        title_tag = soup.find("h1", class_="title")
-        if title_tag:
-            title = title_tag.get_text(strip=True)
+        title_tag = soup.find("h2", class_="h4 mb-1")
+        if not title_tag:
+            return False
+        title_element  = title_tag.get_text(strip=True)
+        cleaned = re.sub(r'^S\d{2}E\d{2}:\s*', '', title_element)
+        sprachen = get_languages_for_episode(episode_url)
+        if sprachen != -1:
+            if "German Dub" in sprachen:
+                cleaned = re.sub(r'\s*\([^)]*\)\s*$', '', cleaned)
+            else:
+                cleaned = cleaned.replace('(', '').replace(')', '')
+        title = sanitize_episode_title(cleaned)
+
+
+
     elif "https://aniworld.to/" in episode_url:
         title_tag = soup.find("h1", class_="title")
-        if title_tag:
-            title = title_tag.get_text(strip=True)
+        if not title_tag:
+            return False
+        title = sanitize_episode_title(title_tag.get_text(strip=True))
     return title

@@ -5,6 +5,7 @@ from html_request import get_seasons_with_episode_count, get_languages_for_episo
 from url_build import get_episode_url
 from API_Endpoints import api
 from config import load_config
+from database import add_to_db, init_db, update_index, get_series_title, last_downloaded_episode, last_downloaded_season, last_downloaded_film, anime_completion, update_title
 
 
 
@@ -30,60 +31,15 @@ def after_request(response):
     return response
 
 # -------------------- Konfiguration --------------------
-def import_config_data(print_enabled: bool = True)-> bool:
-    global LANGUAGES, MIN_FREE_GB, PORT, DOWNLOAD_PATH, STORAGE_MODE, ANIME_SEPARATE_MOVIES, SERIEN_SEPARATE_MOVIES, MOVIES_PATH, SERIES_PATH, ANIME_PATH, ANIME_MOVIES_PATH, SERIEN_MOVIES_PATH, AUTOSTART_MODENUL, REFRESH_TITLES, DATA_FOLDER_PATH
-    config_data = load_config()
-    if not config_data:
-        print("Fehler beim Laden der Konfiguration. Bitte überprüfen Sie die config.json.")
-        return False
 
-    LANGUAGES = config_data.get('languages') 
-    MIN_FREE_GB = int(config_data.get('min_free_gb'))
-    PORT = int(config_data.get('port'))
-    DOWNLOAD_PATH = str(config_data.get('download_path'))
-    STORAGE_MODE = str(config_data.get('storage_mode'))
-    ANIME_SEPARATE_MOVIES = bool(config_data.get('anime_separate_movies'))
-    SERIEN_SEPARATE_MOVIES = bool(config_data.get('serien_separate_movies'))
-    MOVIES_PATH = str(config_data.get('movies_path'))
-    SERIES_PATH = str(config_data.get('series_path'))
-    ANIME_PATH = str(config_data.get('anime_path'))
-    ANIME_MOVIES_PATH = str(config_data.get('anime_movies_path'))
-    SERIEN_MOVIES_PATH = str(config_data.get('serien_movies_path'))
-    AUTOSTART_MODENUL = str(config_data.get('autostart_modenul'))
-    REFRESH_TITLES = bool(config_data.get('refresh_titles'))
-    DATA_FOLDER_PATH = str(config_data.get('data_folder_path'))
-    if print_enabled:
-        print(f"Konfiguration erfolgreich geladen. Aktuelle Werte:")
-        print(json.dumps(config_data, indent=2, ensure_ascii=False))
-    return True
-
-def get_output_path(staffel: str, url: str) -> str:
-    if STORAGE_MODE == "standard":
-        return DOWNLOAD_PATH
-    elif STORAGE_MODE == "separate":
-        if "https://s.to/" in url:
-            if staffel.strip().lower() == "0":
-                if SERIEN_SEPARATE_MOVIES:
-                    return SERIEN_MOVIES_PATH
-                elif SERIEN_SEPARATE_MOVIES is False:
-                    return MOVIES_PATH
-            else:
-                return SERIES_PATH
-            
-        
-        elif "https://aniworld.to/" in url:
-            if staffel.strip().lower() == "filme":
-                if ANIME_SEPARATE_MOVIES:  
-                    return ANIME_MOVIES_PATH
-                elif ANIME_SEPARATE_MOVIES is False:
-                    return MOVIES_PATH
-            else:
-                return ANIME_PATH
-    print(f"Ungültige URL oder Staffel: {url} Staffel: {staffel}. Rückfall auf Standard-Downloadpfad.")       
-    return DOWNLOAD_PATH
-    
+   
 
 def CLI_download(url: str, german_only: bool = False) -> int:
+    config = load_config()
+    if not config:  
+        print("Fehler beim Laden der Konfiguration. Bitte überprüfen Sie die config.json.")
+        exit(1)
+    LANGUAGES = config.get('languages')
     if LANGUAGES[0] != "German Dub" and german_only:
         return -1
     seasons = get_seasons_with_episode_count(url)
@@ -91,7 +47,7 @@ def CLI_download(url: str, german_only: bool = False) -> int:
         print("Error retrieving seasons or episodes.")
         return 1
     for season in seasons:
-        output_path = get_output_path(season, url)
+        output_path = config.get('download_path')
         for episode in seasons[season]:
             episode_url = get_episode_url(url, season, episode)
             sprachen = get_languages_for_episode(episode_url)
@@ -123,28 +79,35 @@ def check_new_german(episode_url: str) -> bool:
 
 if __name__ == "__main__":
     start = time.perf_counter()
-    if import_config_data(print_enabled=False) is False:
+    config = load_config()
+    if not config: 
+        print("Fehler beim Laden der Konfiguration. Bitte überprüfen Sie die config.json.")
         exit(1)
 
+    PORT = config.get('port')
+    init_db()
+    update_index()
+    if config.get('refresh_titles') == True:
+        update_title()
+
+
     test_mode = True
-    
     if test_mode:
         test_urls = [
             "https://s.to/serie/seishun-buta-yarou-wa-bunny-girl-senpai-no-yume-o-minai",
-#            "https://s.to/serie/the-rookie",
-#            "https://s.to/serie/die-drachenreiter-von-berk",
+            "https://s.to/serie/the-rookie",
+            "https://s.to/serie/die-drachenreiter-von-berk",
                     ]
         for url in test_urls:
+            add_to_db(url)
             CLI_download(url=url, german_only=False)
         
     else:
-        # Flask Server starten
+        # Flask Server starten und laufen lassen
         print(f"Starting Better_AniLoader Server on port {PORT}...")
         print(f"API available at http://localhost:{PORT}")
         app.run(host="0.0.0.0", port=PORT, debug=False, threaded=True)
-
-
-            
+   
     elapsed = time.perf_counter() - start
     print(f"Elapsed: {elapsed:.2f}s")
 

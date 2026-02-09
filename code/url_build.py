@@ -13,10 +13,13 @@ def get_episode_url(url: str, staffel: str, episode: str) -> str:
         staffel_url = get_season_url(url, staffel)
         if "https://s.to/" in url: 
             episode_url = staffel_url.rstrip('/') + '/episode-' + episode
+
         elif int(staffel) > 0 and "https://aniworld.to/" in url:
             episode_url = staffel_url.rstrip('/') + '/episode-' + episode
+
         elif staffel.strip().lower() == "filme" and "https://aniworld.to/" in url:
             episode_url = staffel_url.rstrip('/') + '/episode-' + episode
+            
         else:
             return ""
         return episode_url

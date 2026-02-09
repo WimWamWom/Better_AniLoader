@@ -16,6 +16,7 @@ standart_werte = {
         "storage_mode": "standard",
         "anime_separate_movies": False,
         "serien_separate_movies": False,
+        "dedicated_movies_folder": False,
         "movies_path": str(Path(DOWNLOAD_DIR) / "Filme"),
         "series_path": str(Path(DOWNLOAD_DIR) / "Serien"),
         "anime_path": str(Path(DOWNLOAD_DIR) / "Anime"),
@@ -62,7 +63,6 @@ def ceck_and_init_config() -> bool:
         print(f"[CONFIG-ERROR] check_if_config_complete (update): {exception}")
         complete = False
         return complete
-    print("[CONFIG] Alle benötigten Schlüssel vorhanden.")
     return complete
 
 def load_config():
