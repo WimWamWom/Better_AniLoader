@@ -98,7 +98,7 @@ if __name__ == "__main__":
     if test_mode:
         print(get_file_path("https://s.to/serie/seishun-buta-yarou-wa-bunny-girl-senpai-no-yume-o-minai", "0", "1"))
         print(get_file_path("https://s.to/serie/seishun-buta-yarou-wa-bunny-girl-senpai-no-yume-o-minai", "0", "2"))
-        print(get_file_path("https://s.to/serie/seishun-buta-yarou-wa-bunny-girl-senpai-no-yume-o-minai", "0", "3"))
+        print(get_file_path("https://aniworld.to/anime/stream/your-lie-in-april", "1", "1"))
         print(get_file_path("https://s.to/serie/the-rookie", "1", "1"))
         print(get_file_path("https://s.to/serie/the-rookie", "4", "10"))
         print(get_file_path("https://s.to/serie/the-rookie", "6", "7"))
