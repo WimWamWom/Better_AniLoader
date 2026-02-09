@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, render_template
 
 # Blueprint erstellen
 api = Blueprint('api', __name__)
@@ -235,8 +235,4 @@ def check():
 # -------------------- MAIN PAGE --------------------
 @api.route("/")
 def index():
-    """
-    Haupt-Seite (HTML Template oder React App).
-    """
-    # TODO: Implementierung - render_template() oder send_file() für SPA
-    raise NotImplementedError("index endpoint not yet implemented")
+    return render_template("index.html")

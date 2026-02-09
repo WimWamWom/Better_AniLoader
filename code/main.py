@@ -1,16 +1,20 @@
+import os
 import time
-from flask import Flask, json
+from flask import Flask
 from flask_cors import CORS
 from html_request import get_seasons_with_episode_count, get_languages_for_episode
 from url_build import get_episode_url
 from API_Endpoints import api
 from config import load_config
 from database import add_to_db, init_db, update_index, get_series_title, last_downloaded_episode, last_downloaded_season, last_downloaded_film, anime_completion, update_title
-
+from file_management import get_file_path
 
 
 # -------------------- Flask App Setup --------------------
-app = Flask(__name__)
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+TEMPLATE_DIR = os.path.join(BASE_DIR, "templates")
+STATIC_DIR = os.path.join(BASE_DIR, "static")
+app = Flask(__name__, template_folder=TEMPLATE_DIR, static_folder=STATIC_DIR)
 CORS(app, resources={r"/*": {
     "origins": "*", 
     "allow_headers": "*", 
@@ -90,9 +94,16 @@ if __name__ == "__main__":
     if config.get('refresh_titles') == True:
         update_title()
 
-
-    test_mode = True
+    test_mode = False
     if test_mode:
+        print(get_file_path("https://s.to/serie/seishun-buta-yarou-wa-bunny-girl-senpai-no-yume-o-minai", "0", "1"))
+        print(get_file_path("https://s.to/serie/seishun-buta-yarou-wa-bunny-girl-senpai-no-yume-o-minai", "0", "2"))
+        print(get_file_path("https://s.to/serie/seishun-buta-yarou-wa-bunny-girl-senpai-no-yume-o-minai", "0", "3"))
+        print(get_file_path("https://s.to/serie/the-rookie", "1", "1"))
+        print(get_file_path("https://s.to/serie/the-rookie", "4", "10"))
+        print(get_file_path("https://s.to/serie/the-rookie", "6", "7"))
+
+
         test_urls = [
             "https://s.to/serie/seishun-buta-yarou-wa-bunny-girl-senpai-no-yume-o-minai",
             "https://s.to/serie/the-rookie",

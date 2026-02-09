@@ -194,11 +194,3 @@ def move_file(source: Path, destination: Path) -> bool:
         print(f"✗ Fehler beim Verschieben: {e}")
         return False
 
-
-
-print(get_file_path("https://s.to/serie/seishun-buta-yarou-wa-bunny-girl-senpai-no-yume-o-minai", "0", "1"))
-print(get_file_path("https://s.to/serie/seishun-buta-yarou-wa-bunny-girl-senpai-no-yume-o-minai", "0", "2"))
-print(get_file_path("https://s.to/serie/seishun-buta-yarou-wa-bunny-girl-senpai-no-yume-o-minai", "0", "3"))
-print(get_file_path("https://s.to/serie/the-rookie", "1", "1"))
-print(get_file_path("https://s.to/serie/the-rookie", "4", "10"))
-print(get_file_path("https://s.to/serie/the-rookie", "6", "7"))

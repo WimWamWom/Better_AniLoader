@@ -125,23 +125,28 @@ def get_episode_title(episode_url: str):
     title = None
     if "https://s.to/" in episode_url:
         title_tag = soup.find("h2", class_="h4 mb-1")
-        if not title_tag:
-            return False
-        title_element  = title_tag.get_text(strip=True)
-        cleaned = re.sub(r'^S\d{2}E\d{2}:\s*', '', title_element)
-        sprachen = get_languages_for_episode(episode_url)
-        if sprachen != -1:
-            if "German Dub" in sprachen:
-                cleaned = re.sub(r'\s*\([^)]*\)\s*$', '', cleaned)
-            else:
-                cleaned = cleaned.replace('(', '').replace(')', '')
-        title = sanitize_episode_title(cleaned)
-
-
+        if title_tag:
+            title_element  = title_tag.get_text(strip=True)
+            cleaned = re.sub(r'^S\d{2}E\d{2}:\s*', '', title_element)
+            sprachen = get_languages_for_episode(episode_url)
+            if sprachen != -1:
+                if "German Dub" in sprachen:
+                    cleaned = re.sub(r'\s*\([^)]*\)\s*$', '', cleaned)
+                else:
+                    cleaned = cleaned.replace('(', '').replace(')', '')
+            title = sanitize_episode_title(cleaned)
+            return title
 
     elif "https://aniworld.to/" in episode_url:
-        title_tag = soup.find("h1", class_="title")
-        if not title_tag:
-            return False
-        title = sanitize_episode_title(title_tag.get_text(strip=True))
-    return title
+        # Suche nach deutschem Titel in <span class="episodeGermanTitle">
+        title_tag = soup.find("span", class_="episodeGermanTitle")
+        if title_tag:
+            title = sanitize_episode_title(title_tag.get_text(strip=True))
+            return title
+        # Fallback: englischer Titel in <small class="episodeEnglishTitle">
+        title_tag = soup.find("small", class_="episodeEnglishTitle")
+        if title_tag:
+            title = sanitize_episode_title(title_tag.get_text(strip=True))
+            return title
+    
+    return False
