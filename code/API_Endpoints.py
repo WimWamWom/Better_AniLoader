@@ -5,12 +5,13 @@ import shutil
 import json
 import threading
 from pathlib import Path 
-from main import PATH_ANILOADER_TXT_BAK
-from config import load_config, save_config, DATA_DIR
+from config import load_config, save_config, PATH_ANILOADER_TXT_BAK
 from database import connect, add_url_to_db
 from helper import sanitize_url
 from txt_manager import write_to_aniloader_txt_bak
-
+from downloader import download
+import time
+        
 # Blueprint erstellen
 api = Blueprint('api', __name__)
 
@@ -81,26 +82,24 @@ def start_download():
             if download_status['status'] == 'running':
                 return jsonify({'status': 'error', 'msg': 'Download läuft bereits'}), 400
         
-        from downloader import download
-        import time
-        
-        def run_download():
-            global download_status
-            download_status['status'] = 'running'
-            download_status['mode'] = mode
-            download_status['started_at'] = time.time()
-            try:
-                download(mode)
-            finally:
-                download_status['status'] = 'idle'
-                download_status['mode'] = None
-                download_status['current_id'] = None
-                download_status['current_title'] = None
-        
-            download_thread = threading.Thread(target=run_download, daemon=True)
-            download_thread.start()
+
+            def run_download():
+                global download_status
+                download_status['status'] = 'running'
+                download_status['mode'] = mode
+                download_status['started_at'] = time.time()
+                try:
+                    download(mode)
+                finally:
+                    download_status['status'] = 'idle'
+                    download_status['mode'] = None
+                    download_status['current_id'] = None
+                    download_status['current_title'] = None
             
-            return jsonify({'status': 'ok', 'msg': f'Download gestartet ({mode})'}), 200
+                download_thread = threading.Thread(target=run_download, daemon=True)
+                download_thread.start()
+                
+                return jsonify({'status': 'ok', 'msg': f'Download gestartet ({mode})'}), 200
         except Exception as e:
             download_status['status'] = 'idle'
             return jsonify({'status': 'error', 'msg': str(e)}), 500

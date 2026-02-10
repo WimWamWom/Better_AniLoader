@@ -42,9 +42,7 @@ const logCount = document.getElementById('log-count');
 // Cache for per-season counts to avoid flicker while updating
 const countsCache = {};
 
-// Queue elements
-const queueBody = document.getElementById('queue-body');
-const queueClearBtn = document.getElementById('queue-clear');
+// ...existing code...
 
 function setStartButtonsDisabled(disabled) {
   [startDefault, startNew, startGerman, startMissing, startFullCheck].forEach(btn => {
@@ -214,48 +212,7 @@ async function fetchOverview() {
   } catch(e) { console.error(e); }
 }
 
-/* ---------- Queue ---------- */
-async function fetchQueue() {
-  try {
-    const list = await apiGet('/queue');
-    if (!Array.isArray(list)) return;
-    queueBody.innerHTML = '';
-    list.forEach((q, idx) => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${idx + 1}</td><td>${q.anime_id ?? ''}</td><td>${q.title || ''}</td><td><button class="btn btn-sm btn-outline-danger" data-qid="${q.id}">Entfernen</button></td>`;
-      queueBody.appendChild(tr);
-    });
-    // attach remove handlers
-    queueBody.querySelectorAll('button[data-qid]').forEach(btn => {
-      btn.addEventListener('click', async (e) => {
-        const qid = e.currentTarget.getAttribute('data-qid');
-        if (!qid) return;
-        await queueRemove(qid);
-      });
-    });
-  } catch (e) { console.error('fetchQueue', e); }
-}
-
-async function queueAdd(animeId) {
-  try {
-    await apiPost('/queue', { anime_id: animeId });
-    await fetchQueue();
-  } catch (e) { console.error('queueAdd', e); }
-}
-
-async function queueClear() {
-  try {
-    await fetch('/queue', { method: 'DELETE' });
-    await fetchQueue();
-  } catch (e) { console.error('queueClear', e); }
-}
-
-async function queueRemove(queueId) {
-  try {
-    await fetch(`/queue?id=${encodeURIComponent(queueId)}`, { method: 'DELETE' });
-    await fetchQueue();
-  } catch (e) { console.error('queueRemove', e); }
-}
+// Queue functionality removed
 
 /* ---------- Settings (config) ---------- */
 const langList = document.getElementById('lang-list');
@@ -732,112 +689,9 @@ async function fetchDatabase() {
   } catch(e) { console.error(e); }
 }
 
-let lastLogs = [];
-async function fetchLogs() {
-  try {
-    // Prüfe welche Log-Quelle gewählt ist
-    const logSource = logSourceLastRun && logSourceLastRun.checked ? 'last_run' : 'all';
-    const endpoint = logSource === 'last_run' ? '/last_run' : '/logs';
-    
-    const data = await apiGet(endpoint);
-    if (!Array.isArray(data)) return;
-    let lines = data;
-    // Begrenze die Anzahl der Logzeilen auf maximal 20000
-    if (lines.length > 30000) {
-      lines = lines.slice(-30000);
-    }
-    const filterVal = logFilter.value.trim();
-    if (filterVal) {
-      try {
-        const rx = new RegExp(filterVal, 'i');
-        lines = lines.filter(l => rx.test(l));
-      } catch(e) {}
-    }
-    if (lines.join('\n') === lastLogs.join('\n')) return;
-    lastLogs = lines;
-    // Build colorized log lines with [TAG] badges
-    const frag = document.createDocumentFragment();
-    if (lines.length === 0) {
-      const empty = document.createElement('div');
-      empty.className = 'log-line';
-      empty.textContent = 'Noch keine Logs...';
-      frag.appendChild(empty);
-    } else {
-      lines.forEach((ln, idx) => {
-        const row = document.createElement('div');
-        // Default category INFO
-        let category = 'INFO';
-        let text = ln;
-        let tagText = null;
-        const m = ln.match(/^\s*\[([^\]]+)\]\s*(.*)$/);
-        if (m) {
-          tagText = m[1].trim();
-          text = m[2] || '';
-          const up = tagText.toUpperCase();
-          if (up.includes('ERROR') || up.includes('FEHLER')) category = 'ERROR';
-          else if (up.includes('WARN')) category = 'WARN';
-          else if (up.includes('OK') || up.includes('SUCCESS')) category = 'OK';
-          else if (up.includes('DB')) category = 'DB';
-          else if (up.includes('CONFIG')) category = 'CONFIG';
-          else if (up.includes('SYSTEM')) category = 'SYSTEM';
-          else if (up.includes('DEL')) category = 'WARN';
-        }
-        row.className = 'log-line sev-' + category;
-        // line number
-        const lnSpan = document.createElement('span');
-        lnSpan.className = 'log-ln';
-        lnSpan.textContent = String(idx + 1);
-        row.appendChild(lnSpan);
-        // tag
-        if (tagText) {
-          const tagSpan = document.createElement('span');
-          tagSpan.className = 'log-tag tag-' + category;
-          tagSpan.textContent = tagText;
-          row.appendChild(tagSpan);
-        }
-        // text
-        const textSpan = document.createElement('span');
-        textSpan.className = 'log-text';
-        textSpan.textContent = text || (tagText ? '' : ln);
-        row.appendChild(textSpan);
-        frag.appendChild(row);
-      });
-    }
-    logBox.innerHTML = '';
-    logBox.appendChild(frag);
-    if (!autoScrollChk || autoScrollChk.checked) {
-      logBox.scrollTop = logBox.scrollHeight;
-    }
-    logCount.textContent = lines.length;
-  } catch(e) {}
-}
+// Logs functionality for /logs endpoint removed
 
-async function fetchDisk() {
-  try {
-    const data = await apiGet('/disk');
-    const el = document.getElementById('disk-free');
-    if (!el) return;
-    if (data && typeof data.free_gb === 'number') {
-      // Backend returns GB as number; convert to appropriate unit
-      const gb = data.free_gb;
-      let value = gb;
-      let unit = 'GB';
-      if (gb >= 1024) {
-        value = (gb / 1024);
-        unit = 'TB';
-      } else if (gb < 1) {
-        value = (gb * 1024);
-        unit = 'MB';
-      }
-      const shown = (unit === 'MB') ? Math.round(value) : (Math.round(value * 10) / 10);
-      el.textContent = `Freier Speicher: ${shown} ${unit}`;
-    } else if (data && data.free_gb === null) {
-      el.textContent = `Freier Speicher: n/a`;
-    }
-  } catch(e) {
-    console.error('fetchDisk', e);
-  }
-}
+// ...existing code...
 
 
 async function startDownload(mode) {
@@ -1187,16 +1041,13 @@ function copyToClipboard(text) {
   });
 }
 
-/* start polling */
+// Only poll endpoints that exist
 fetchOverview();
 fetchDatabase();
 fetchStatus();
-fetchLogs();
-fetchDisk();
-fetchQueue();
-// Staggered polling: each runs regularly with offsets between starts
-const INTERVAL_MS = 5000; // 5 Sekunden (war vorher 60s)
-const STAGGER_MS = 1000; // 1 Sekunde zwischen den verschiedenen Abfragen
+// fetchLogs, fetchDisk, fetchQueue removed
+const INTERVAL_MS = 5000;
+const STAGGER_MS = 1000;
 function scheduleStaggered(fn, offsetMs) {
   setTimeout(() => {
     try { fn(); } catch(e) { console.error(e); }
@@ -1206,31 +1057,6 @@ function scheduleStaggered(fn, offsetMs) {
 scheduleStaggered(fetchOverview, 0);
 scheduleStaggered(fetchDatabase, STAGGER_MS);
 scheduleStaggered(fetchStatus, STAGGER_MS * 2);
-scheduleStaggered(fetchLogs, STAGGER_MS * 3);
-scheduleStaggered(fetchDisk, STAGGER_MS * 4);
-scheduleStaggered(fetchQueue, STAGGER_MS * 5);
+// fetchLogs, fetchDisk, fetchQueue staggered polling removed
 
-// Logs toolbar actions
-copyLogsBtn?.addEventListener('click', async () => {
-  try {
-    const text = Array.isArray(lastLogs) && lastLogs.length ? lastLogs.join('\n') : (logBox.textContent || '');
-    await navigator.clipboard.writeText(text);
-  } catch (e) {
-    console.error('copy logs failed', e);
-  }
-});
-
-// Log Source Radio Buttons - bei Änderung Logs neu laden
-logSourceAll?.addEventListener('change', () => {
-  if (logSourceAll.checked) {
-    fetchLogs();
-  }
-});
-
-logSourceLastRun?.addEventListener('change', () => {
-  if (logSourceLastRun.checked) {
-    fetchLogs();
-  }
-});
-
-queueClearBtn?.addEventListener('click', queueClear);
+// Logs and queue toolbar actions removed

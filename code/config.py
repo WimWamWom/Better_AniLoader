@@ -3,10 +3,13 @@ import os
 import json
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+PATH_ANILOADER_TXT_BAK = BASE_DIR / "AniLoader.txt.bak"
+PATH_ANILOADER_TXT = BASE_DIR / "AniLoader.txt"
 DOWNLOAD_DIR = BASE_DIR / "Downloads"
 DATA_DIR = BASE_DIR / "data"
 CONFIG_PATH = DATA_DIR / 'config.json'
-os.makedirs(DATA_DIR, exist_ok=True)
+os.makedirs(DATA_DIR, exist_ok=True) if not DATA_DIR.exists() else None
+os.makedirs(DOWNLOAD_DIR, exist_ok=True) if not DOWNLOAD_DIR.exists() else None
 
 standart_werte = {
         "languages": ["German Dub", "German Sub", "English Dub", "English Sub"],
@@ -27,6 +30,7 @@ standart_werte = {
         "movies_path": str(Path(DOWNLOAD_DIR) / "Filme"),
         "anime_movies_path": str(Path(DOWNLOAD_DIR) / "Filme-Anime"),
         "serien_movies_path": str(Path(DOWNLOAD_DIR) / "Filme-Serien"),
+        
 }
 
 

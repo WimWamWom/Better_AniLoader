@@ -10,7 +10,7 @@ from txt_manager import read_aniloader_txt, write_to_aniloader_txt_bak
 from helper import sanitize_url
 
 # -------------------- Flask App Setup --------------------
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+from config import PATH_ANILOADER_TXT, PATH_ANILOADER_TXT_BAK, BASE_DIR
 TEMPLATE_DIR = os.path.join(BASE_DIR, "templates")
 STATIC_DIR = os.path.join(BASE_DIR, "static")
 app = Flask(__name__, template_folder=TEMPLATE_DIR, static_folder=STATIC_DIR)
@@ -34,7 +34,7 @@ def after_request(response):
     return response
 
 # -------------------- START --------------------
-TEST = True
+TEST = False
 
 if __name__ == "__main__":
     start = time.perf_counter()
@@ -47,8 +47,7 @@ if __name__ == "__main__":
     START_MODE = str(config.get('autostart_mode')).lower().strip() if config.get('autostart_mode') else None
     ANILOADER_TXT_BACKUP = bool(config.get('aniloader_txt_backup'))
 
-    PATH_ANILOADER_TXT = os.path.join(BASE_DIR, "AniLoader.txt")
-    PATH_ANILOADER_TXT_BAK = os.path.join(BASE_DIR, "AniLoader.txt.bak")
+
     init_db()
     update_index()
 
