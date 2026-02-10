@@ -96,10 +96,10 @@ def start_download():
                     download_status['current_id'] = None
                     download_status['current_title'] = None
             
-                download_thread = threading.Thread(target=run_download, daemon=True)
-                download_thread.start()
-                
-                return jsonify({'status': 'ok', 'msg': f'Download gestartet ({mode})'}), 200
+            download_thread = threading.Thread(target=run_download, daemon=True)
+            download_thread.start()
+            
+            return jsonify({'status': 'ok', 'msg': f'Download gestartet ({mode})'}), 200
         except Exception as e:
             download_status['status'] = 'idle'
             return jsonify({'status': 'error', 'msg': str(e)}), 500

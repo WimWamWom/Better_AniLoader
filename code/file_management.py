@@ -97,7 +97,7 @@ def get_existing_file_path(serien_url: str, season: str, episode: str, config) -
     if not config:
         print("Fehler beim Laden der Konfiguration.")
         return None
-
+    #Für Filme könnte es je nach Einstellung direkt im Serienordner liegen oder in einem separaten Filme-Ordner. Daher müssen wir beide Möglichkeiten prüfen.
     if season.strip().lower() == "0" or season.strip().lower() == "filme":
         if config.get('dedicated_movies_folder') or config.get('serien_separate_movies') or config.get('anime_separate_movies'):
             target_folder = Path(folder_path) / file_name
@@ -160,18 +160,20 @@ def get_file_name(serien_url: str, season: str, episode: str):
 # DATEI-VERWALTUNG (Umbenennen, Verschieben, Löschen)
 # ============================================================================
 
-def find_downloaded_file(season: str, episode: str, config: dict) -> Optional[Path]:
+def find_downloaded_file(season: str, episode: str, config: dict, url: str) -> Optional[Path]:
     if config is None:
         config = load_config()
         if not config:
             print("Fehler beim Laden der Konfiguration.")
             return None
         
+    titel = get_series_title(url)
     download_path = config.get('download_path')
     if not download_path:
         print("Fehler: Download-Pfad nicht in der Konfiguration gefunden.")
         return None
-    base_path = Path(download_path)
+    
+    base_path = Path(download_path) / titel
 
     if not base_path.exists():
         print(f"✗ Download-Pfad existiert nicht: {download_path}")
@@ -198,7 +200,7 @@ def move_downloaded_file(serien_url: str, season: str, episode: str, config: dic
             print("[ERROR] Fehler beim Laden der Konfiguration.")
             return None
 
-    source_file = find_downloaded_file(season, episode, config)
+    source_file = find_downloaded_file(season, episode, config, serien_url)
     
     if not source_file:
         print(f"[ERROR] Keine heruntergeladene Datei gefunden für Season {season}, Episode {episode}")

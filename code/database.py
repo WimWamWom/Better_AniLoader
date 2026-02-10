@@ -65,31 +65,39 @@ def init_db() -> None:
     database.close()
 
 def update_index():
+    """Reindexiert die anime-Tabelle sequentiell (mit Transaktions-Sicherheit)"""
     database = connect()
     cursor = database.cursor()
-    cursor.execute("CREATE TEMPORARY TABLE anime_backup AS SELECT * FROM anime;")
-    cursor.execute("DROP TABLE anime;")
-    cursor.execute("""
-        CREATE TABLE anime (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            title TEXT, url TEXT UNIQUE,
-            complete INTEGER DEFAULT 0,
-            deutsch_komplett INTEGER DEFAULT 0,
-            deleted INTEGER DEFAULT 0,
-            fehlende_deutsch_folgen TEXT DEFAULT '[]',
-            last_film INTEGER DEFAULT 0,
-            last_episode INTEGER DEFAULT 0,
-            last_season INTEGER DEFAULT 0
-        )
-    """)
-    cursor.execute("""
-        INSERT INTO anime (title, url, complete, deutsch_komplett, deleted, fehlende_deutsch_folgen, last_film, last_episode, last_season)
-        SELECT title, url, complete, deutsch_komplett, deleted, fehlende_deutsch_folgen, last_film, last_episode, last_season
-        FROM anime_backup
-    """)
-    cursor.execute("DROP TABLE anime_backup;")
-    database.commit()
-    database.close()
+    try:
+        database.execute("BEGIN TRANSACTION")
+        cursor.execute("CREATE TEMPORARY TABLE anime_backup AS SELECT * FROM anime;")
+        cursor.execute("DROP TABLE anime;")
+        cursor.execute("""
+            CREATE TABLE anime (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                title TEXT, url TEXT UNIQUE,
+                complete INTEGER DEFAULT 0,
+                deutsch_komplett INTEGER DEFAULT 0,
+                deleted INTEGER DEFAULT 0,
+                fehlende_deutsch_folgen TEXT DEFAULT '[]',
+                last_film INTEGER DEFAULT 0,
+                last_episode INTEGER DEFAULT 0,
+                last_season INTEGER DEFAULT 0
+            )
+        """)
+        cursor.execute("""
+            INSERT INTO anime (title, url, complete, deutsch_komplett, deleted, fehlende_deutsch_folgen, last_film, last_episode, last_season)
+            SELECT title, url, complete, deutsch_komplett, deleted, fehlende_deutsch_folgen, last_film, last_episode, last_season
+            FROM anime_backup
+        """)
+        cursor.execute("DROP TABLE anime_backup;")
+        database.commit()
+        print("[DB] Index reindexiert")
+    except Exception as e:
+        database.rollback()
+        print(f"[DB-ERROR] update_index fehlgeschlagen, Rollback übernommen: {e}")
+    finally:
+        database.close()
 
 def add_url_to_db(url):
     if url.startswith("https://s.to") or url.startswith("https://aniworld.to"): 

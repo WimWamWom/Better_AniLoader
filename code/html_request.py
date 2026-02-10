@@ -5,6 +5,9 @@ from bs4 import BeautifulSoup
 from url_builder import get_season_url
 from helper import sanitize_episode_title, sanitize_title
 from urllib.parse import urlparse
+from requests.adapters import HTTPAdapter
+from urllib3.util.connection import create_connection as _origin_create_connection
+import socket
 
 headers = {"User-Agent": "Mozilla/5.0 (compatible; AniLoaderBot/1.0)"}
 
@@ -35,6 +38,20 @@ def resolve_dns_via_cloudflare(hostname: str) -> str:
     return hostname
 
 # Session mit Cloudflare DNS
+dns_cache: Dict[str, str] = {}
+_original_getaddrinfo = socket.getaddrinfo
+
+def patched_getaddrinfo(host, port, family=0, type=0, proto=0, flags=0):
+    """Patched getaddrinfo, der DNS-Cache nutzt"""
+    if host in dns_cache:
+        resolved_ip = dns_cache[host]
+        print(f"[DNS-CACHE] Using cached IP for {host}: {resolved_ip}")
+        return _original_getaddrinfo(resolved_ip, port, family, type, proto, flags)
+    return _original_getaddrinfo(host, port, family, type, proto, flags)
+
+# Patch socket.getaddrinfo
+socket.getaddrinfo = patched_getaddrinfo
+
 class CloudflareSession(requests.Session):
     """Session die DNS-Abfragen über Cloudflare 1.1.1.1 routet"""
     
@@ -46,20 +63,13 @@ class CloudflareSession(requests.Session):
         """Override request um Cloudflare DNS zu verwenden"""
         parsed = urlparse(url)
         hostname = parsed.hostname
-        
-        if hostname:
-            # DNS über Cloudflare auflösen
+
+        if hostname and hostname not in dns_cache:
+            # DNS über Cloudflare auflösen und cachen
             ip = resolve_dns_via_cloudflare(hostname)
-            
-            # URL mit IP ersetzen, aber Host-Header Original lassen
-            if ip != hostname and ip:
-                url_with_ip = url.replace(hostname, ip, 1)
-                # Host-Header für SNI und Virtual Hosting
-                if 'headers' not in kwargs:
-                    kwargs['headers'] = {}
-                kwargs['headers']['Host'] = hostname
-                url = url_with_ip
-        
+            if ip != hostname:
+                dns_cache[hostname] = ip
+
         return super().request(method, url, **kwargs)
 
 # Globale Session mit Cloudflare DNS
@@ -101,22 +111,53 @@ def get_seasons_with_episode_count(url: str):
     seasons_with_episode_count: Dict[str, List[str]] = {}
     staffeln = get_season_numbers(url)
     
+    if not staffeln:
+        print(f"[ERROR] Keine Staffeln gefunden für {url}")
+        return -1
+    
     for staffel in staffeln:
         staffel_url = get_season_url(url, staffel)
         staffel_html = cloudflare_session.get(staffel_url, timeout=5)
         staffel_html.raise_for_status()
         soup = BeautifulSoup(staffel_html.text, "html.parser")
         episodes: List[str] = []
-        rows = soup.find_all("tr", class_="episode-row")
+
+        if "https://s.to/" in url:
+            rows = soup.find_all("tr", class_="episode-row")
+            
+            if not rows:
+                print(f"[WARN] Keine Episode-Rows gefunden für Staffel {staffel}. HTML-Struktur könnte geändert haben.")
+                print(f"[WARN] Versuche alternative Selektoren...")
+            
+            
+            for row in rows:
+                if "upcoming"  in str(row.get("class")):
+                    continue
+                th = row.select_one("th.episode-number-cell")
+                num = th.get_text(strip=True) if th else None
+                if num :
+                    episodes.append(num)
+            seasons_with_episode_count[staffel] = episodes
         
-        for row in rows:
-            if "upcoming"  in str(row.get("class")):
-                continue
-            th = row.select_one("th.episode-number-cell")
-            num = th.get_text(strip=True) if th else None
-            if num :
-                episodes.append(num)
-        seasons_with_episode_count[staffel] = episodes
+        elif "https://aniworld.to/" in url:
+            # Suche nach der Tabelle mit Season-Daten
+            season_table = soup.find("table", class_="seasonEpisodesList")
+            if season_table:
+                tbody = season_table.find("tbody", id=f"season{staffel}")
+                if tbody:
+                    for tr in tbody.find_all("tr"):
+                        meta_episode = tr.find("meta", attrs={"itemprop": "episodeNumber"})
+                        if meta_episode:
+                            episode_num = meta_episode.get("content")
+                            if episode_num:
+                                episodes.append(episode_num)
+                    print(f"[OK] {len(episodes)} Episoden für Staffel {staffel} gefunden")
+                else:
+                    print(f"[WARN] Kein tbody mit id='season{staffel}' gefunden für aniworld.to")
+            else:
+                print(f"[WARN] Keine seasonEpisodesList Tabelle gefunden für aniworld.to")
+            
+            seasons_with_episode_count[staffel] = episodes
     return seasons_with_episode_count
 
 def get_languages_for_episode(episode_url: str):
@@ -153,7 +194,6 @@ def get_languages_for_episode(episode_url: str):
                 if sprache in vorhandene_sprachen or not sprache:
                     continue
                 vorhandene_sprachen.append(sprache)
-                print(sprache)
                 if sprache.lower() == "german":
                     sprache = "German Dub"
                 elif sprache.lower() == "english":

@@ -1,18 +1,28 @@
 from database import check_index_exist, get_missing_german_episodes, set_completion_status, get_series_title_from_db, get_series_url_from_db, get_last_downloaded_episode, get_last_downloaded_season, get_last_downloaded_film, get_completion_status, get_deutsch_completion_status, set_deutsch_completion, set_last_downloaded_episode, set_last_downloaded_film, set_last_downloaded_season, set_missing_german_episodes
 from html_request import get_seasons_with_episode_count, get_languages_for_episode, get_episode_title
-from file_management import move_and_rename_downloaded_file, delete_old_non_german_version, get_existing_file_path
+from file_management import move_and_rename_downloaded_file, delete_old_non_german_version, get_existing_file_path, find_downloaded_file
 from url_builder import get_episode_url
 from config import load_config
 from logger import start_run_logging, stop_run_logging
 import subprocess
+import time
 
 def start_download_process(cmd_command: str) -> bool:
     try:
-        result = subprocess.run(cmd_command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-        print("Download erfolgreich:", result.stdout)
-        return True
-    except subprocess.CalledProcessError as error:
-        print("Fehler beim Download:", error.stderr)
+        # Set Windows console to UTF-8 (65001) before running aniworld
+        # Let output go directly to console instead of capturing
+        utf8_cmd = f"chcp 65001 >nul & {cmd_command}"
+        result = subprocess.run(utf8_cmd, shell=True)
+        # Wait for file system to catch up after download and for .part files to be finalized
+        # Check for up to 30 seconds if .part files are being written
+        if result.returncode == 0:
+            time.sleep(5)  # Give some initial time for file operations
+        return result.returncode == 0
+    except Exception as error:
+        print(f"Fehler beim Download: {error}")
+        return False
+    except Exception as error:
+        print(f"Fehler beim Download: {error}")
         return False
 
 
@@ -44,20 +54,23 @@ def download(mode: str = "default"):
         index = 1
         if check_index_exist(index):
             next_index_exist = True
-
+        else:
+            print("[INFO] Keine Serien in der Datenbank gefunden. Bitte füge zuerst Serien hinzu.")
+            return
         while next_index_exist:
             id = index
             try:
                 title = get_series_title_from_db(id)
                 serien_url = get_series_url_from_db(id)
                 start_serie_msg = (f"|| Starting download for series: {title} ||")
-                seasons_with_episode_count = get_seasons_with_episode_count(serien_url)
-                if not seasons_with_episode_count:
-                    print(f"[ERROR] Could not retrieve seasons or episodes for series: {title}. Skipping to next series.")
-                    continue
                 print("=" * len(start_serie_msg))
                 print(start_serie_msg)
                 print("=" * len(start_serie_msg))
+                
+                seasons_with_episode_count = get_seasons_with_episode_count(serien_url)
+                if not seasons_with_episode_count or seasons_with_episode_count == -1:
+                    print(f"[ERROR] Could not retrieve seasons or episodes for series: {title}. Got: {seasons_with_episode_count}")
+                    continue
         
 
     #================================================
@@ -66,6 +79,8 @@ def download(mode: str = "default"):
 
                 if mode == "default":
                     missing_german_episodes = []
+                    downloaded_episodes = 0  # Counter für heruntergeladene Episoden
+                    
                     # Überprüfe, ob die Serie bereits komplett heruntergeladen wurde
                     if get_completion_status(id) == True:
                         print(f"[SKIP] Serie '{title}' bereits komplett heruntergeladen.")
@@ -107,25 +122,28 @@ def download(mode: str = "default"):
                                     return -1
                                 if sprache != "German Dub":
                                         missing_german_episodes.append(episode_url)
-                                cmd = str("aniworld "+ "--language " + sprache + " -o " + DOWNLOAD_PATH + " --episode " + episode_url)
+                                cmd = str(f'aniworld --language "{sprache}" -o "{DOWNLOAD_PATH}" --episode {episode_url}')
                                 try:
                                     print(f"[INFO] Starting download command: {cmd}")
                                     succes = start_download_process(cmd)
                                     if succes:
                                         print(f"[OK] Download successful for S{int(season):02d}E{int(episode):03d}")
+                                        downloaded_episodes += 1
                                 except Exception as e:
                                     print(f"[ERROR] Error during download process: {e}")
                                     continue  
                             else:
                                 print(f"[ERROR] Could not retrieve languages for episode: {episode_url}")
 
-
-                            if get_existing_file_path(serien_url, season, episode, config) == None:
+                            #get_output_from_download_process(cmd)
+                            downloaded_file = find_downloaded_file(season=season, episode=episode, config=config, url=serien_url)
+                            if downloaded_file == None:
                                 print(f"[ERROR] Download failed for S{int(season):02d}E{int(episode):03d}. No file found after download process.")
                                 continue
 
-                            elif get_existing_file_path(serien_url, season, episode, config) is not None:
+                            elif downloaded_file is not None:
                                 print(f"[VERIFY] File found: {get_episode_title(episode_url)}")
+                                move_and_rename_downloaded_file(serien_url=serien_url, season=season, episode=episode, language=sprache)
 
                             
                             # Nach Abschluss des Downloads die letzte heruntergeladene Episode aktualisieren (inklusive Filme in Staffel 0)
@@ -148,7 +166,11 @@ def download(mode: str = "default"):
                             if missing_german_episodes:
                                 set_missing_german_episodes(id, missing_german_episodes)
             
-                    set_completion_status(id, True)
+                    # Nur als komplett markieren, wenn mindestens eine Episode heruntergeladen wurde
+                    if downloaded_episodes > 0:
+                        set_completion_status(id, True)
+                    else:
+                        print(f"[INFO] Keine neuen Episoden heruntergeladen für Series {id}. Status wird NICHT auf komplett gesetzt.")
 
     #================================================
     #German Mode
@@ -172,7 +194,7 @@ def download(mode: str = "default"):
                                     print(f"[SKIP] Episode {episode_url} noch nicht auf Deutsch verfügbar.")
                                     continue
 
-                                cmd = str("aniworld "+ "--language " + deutsch + " -o " + DOWNLOAD_PATH + " --episode " + episode_url)
+                                cmd = str(f'aniworld --language "{deutsch}" -o "{DOWNLOAD_PATH}" --episode {episode_url}')
                                 try:
                                     print(f"[INFO] Starting download command: {cmd}")
                                     succes = start_download_process(cmd)
@@ -233,7 +255,7 @@ def download(mode: str = "default"):
                                     return -1
                                 if sprache != "German Dub":
                                         missing_german_episodes.append(episode_url)
-                                cmd = str("aniworld "+ "--language " + sprache + " -o " + DOWNLOAD_PATH + " --episode " + episode_url)
+                                cmd = str(f'aniworld --language "{sprache}" -o "{DOWNLOAD_PATH}" --episode {episode_url}')
                                 try:
                                     print(f"[INFO] Starting download command: {cmd}")
                                     succes = start_download_process(cmd)
@@ -363,7 +385,7 @@ def download(mode: str = "default"):
                                     return -1
                                 if sprache != "German Dub":
                                     missing_german_episodes.append(episode_url)
-                                cmd = str("aniworld "+ "--language " + sprache + " -o " + DOWNLOAD_PATH + " --episode " + episode_url)
+                                cmd = str(f'aniworld --language "{sprache}" -o "{DOWNLOAD_PATH}" --episode {episode_url}')
                                 try:
                                     print(f"[INFO] Starting download command: {cmd}")
                                     succes = start_download_process(cmd)
@@ -391,13 +413,16 @@ def download(mode: str = "default"):
 
                         # Nach Abschluss einer Staffel die letzte heruntergeladene Staffel aktualisieren
                         set_last_downloaded_season(id, int(season))
-                        index += 1
-                        if check_index_exist(index):
-                            next_index_exist = True
-                        else:
-                            next_index_exist = False
+
             except Exception as e:
                 print(f"[ERROR] Error processing series with ID {id}: {e}")
+            
+            # Nach jeder Serie zum nächsten Index wechseln (WICHTIG: Das muss NACH allen Modi sein!)
+            index += 1
+            if check_index_exist(index):
+                next_index_exist = True
+            else:
+                next_index_exist = False
         
 #================================================
 #Übergang zur nächsten Serie
