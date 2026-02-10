@@ -4,12 +4,70 @@ import re
 from bs4 import BeautifulSoup
 from url_builder import get_season_url
 from helper import sanitize_episode_title, sanitize_title
+from urllib.parse import urlparse
 
 headers = {"User-Agent": "Mozilla/5.0 (compatible; AniLoaderBot/1.0)"}
 
+# Cloudflare DNS-over-HTTPS Resolver
+def resolve_dns_via_cloudflare(hostname: str) -> str:
+    """
+    Löst einen Hostnamen über Cloudflare DNS (1.1.1.1) mit DNS-over-HTTPS auf.
+    
+    :param hostname: Der aufzulösende Hostname
+    :return: Die aufgelöste IP-Adresse oder der ursprüngliche Hostname bei Fehler
+    """
+    try:
+        doh_url = "https://1.1.1.1/dns-query"
+        params = {"name": hostname, "type": "A"}
+        doh_headers = {"accept": "application/dns-json"}
+        
+        response = requests.get(doh_url, params=params, headers=doh_headers, timeout=5)
+        response.raise_for_status()
+        data = response.json()
+        
+        if "Answer" in data and len(data["Answer"]) > 0:
+            ip = data["Answer"][0]["data"]
+            print(f"[DNS] {hostname} → {ip} (via Cloudflare 1.1.1.1)")
+            return ip
+    except Exception as e:
+        print(f"[DNS-WARNING] Cloudflare DNS fehlgeschlagen für {hostname}: {e}, verwende System-DNS")
+    
+    return hostname
+
+# Session mit Cloudflare DNS
+class CloudflareSession(requests.Session):
+    """Session die DNS-Abfragen über Cloudflare 1.1.1.1 routet"""
+    
+    def __init__(self):
+        super().__init__()
+        self.headers.update(headers)
+    
+    def request(self, method, url, **kwargs):
+        """Override request um Cloudflare DNS zu verwenden"""
+        parsed = urlparse(url)
+        hostname = parsed.hostname
+        
+        if hostname:
+            # DNS über Cloudflare auflösen
+            ip = resolve_dns_via_cloudflare(hostname)
+            
+            # URL mit IP ersetzen, aber Host-Header Original lassen
+            if ip != hostname and ip:
+                url_with_ip = url.replace(hostname, ip, 1)
+                # Host-Header für SNI und Virtual Hosting
+                if 'headers' not in kwargs:
+                    kwargs['headers'] = {}
+                kwargs['headers']['Host'] = hostname
+                url = url_with_ip
+        
+        return super().request(method, url, **kwargs)
+
+# Globale Session mit Cloudflare DNS
+cloudflare_session = CloudflareSession()
+
 def get_season_numbers(url: str):
     season_numbers: List[str] = []
-    serien_html = requests.get(url, headers=headers, timeout=5)
+    serien_html = cloudflare_session.get(url, timeout=5)
     serien_html.raise_for_status()
     soup = BeautifulSoup(serien_html.text, "html.parser")
     if "https://s.to/" in url:
@@ -45,7 +103,7 @@ def get_seasons_with_episode_count(url: str):
     
     for staffel in staffeln:
         staffel_url = get_season_url(url, staffel)
-        staffel_html = requests.get(staffel_url, headers=headers, timeout=5)
+        staffel_html = cloudflare_session.get(staffel_url, timeout=5)
         staffel_html.raise_for_status()
         soup = BeautifulSoup(staffel_html.text, "html.parser")
         episodes: List[str] = []
@@ -62,7 +120,7 @@ def get_seasons_with_episode_count(url: str):
     return seasons_with_episode_count
 
 def get_languages_for_episode(episode_url: str):
-    episode_html = requests.get(episode_url, headers=headers, timeout=5)
+    episode_html = cloudflare_session.get(episode_url, timeout=5)
     episode_html.raise_for_status()
     soup = BeautifulSoup(episode_html.text, "html.parser")
     sprachen: List[str] = []
@@ -112,7 +170,7 @@ def get_languages_for_episode(episode_url: str):
 def get_series_title(url):
     try:
 
-        staffel_html = requests.get(url, headers=headers, timeout=10)
+        staffel_html = cloudflare_session.get(url, timeout=10)
         staffel_html.raise_for_status()
         soup = BeautifulSoup(staffel_html.text, "html.parser")
         title_elem = (
@@ -127,7 +185,7 @@ def get_series_title(url):
         print(f"[FEHLER] Konnte Serien-Titel nicht abrufen ({url}): {e}")
 
 def get_episode_title(episode_url: str, english_title: bool = False):
-    episode_html = requests.get(episode_url, headers=headers, timeout=5)
+    episode_html = cloudflare_session.get(episode_url, timeout=5)
     episode_html.raise_for_status()
     soup = BeautifulSoup(episode_html.text, "html.parser")
     title = None
@@ -141,7 +199,10 @@ def get_episode_title(episode_url: str, english_title: bool = False):
                 if "German Dub" in sprachen and english_title == False:
                     cleaned = re.sub(r'\s*\([^)]*\)\s*$', '', cleaned)
                 else:
-                    cleaned = cleaned.replace('(', '').replace(')', '')
+                    # Extrahiere nur Text innerhalb der Klammern
+                    match = re.search(r'\(([^)]*)\)', cleaned)
+                    if match:
+                        cleaned = match.group(1)
             title = sanitize_episode_title(cleaned)
             return title
 
