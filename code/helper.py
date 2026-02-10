@@ -58,3 +58,7 @@ def sanitize_episode_title(name: str) -> str:
     
     return name
 
+def sanitize_url(url):
+    # Entferne alles ab /staffel-... oder /filme...
+    url = re.sub(r"/(staffel-\d+.*|filme.*)", "", url)
+    return url

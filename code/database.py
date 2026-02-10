@@ -91,7 +91,7 @@ def update_index():
     database.commit()
     database.close()
 
-def add_to_db(url):
+def add_url_to_db(url):
     if url.startswith("https://s.to") or url.startswith("https://aniworld.to"): 
         database = connect()
         cursor = database.cursor()

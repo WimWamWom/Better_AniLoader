@@ -15,9 +15,11 @@ standart_werte = {
         "storage_mode": "standard",
         "autostart_mode": None,
         "refresh_titles": False,
+        "aniloader_txt_backup": True,
         "anime_separate_movies": False,
         "serien_separate_movies": False,
         "dedicated_movies_folder": False,
+        "base_path": str(BASE_DIR),
         "download_path": str(DOWNLOAD_DIR),
         "data_folder_path": str(DATA_DIR),
         "anime_path": str(Path(DOWNLOAD_DIR) / "Anime"),
@@ -25,10 +27,7 @@ standart_werte = {
         "movies_path": str(Path(DOWNLOAD_DIR) / "Filme"),
         "anime_movies_path": str(Path(DOWNLOAD_DIR) / "Filme-Anime"),
         "serien_movies_path": str(Path(DOWNLOAD_DIR) / "Filme-Serien"),
-
-
-
-    }
+}
 
 
 def ceck_and_init_config() -> bool:

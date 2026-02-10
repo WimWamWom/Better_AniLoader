@@ -4,9 +4,10 @@ from flask import Flask
 from flask_cors import CORS
 from API_Endpoints import api
 from config import load_config
-from database import init_db, update_index, update_title
+from database import init_db, update_index, update_title, add_url_to_db
 from downloader import download
-
+from txt_manager import read_aniloader_txt, write_to_aniloader_txt_bak
+from helper import sanitize_url
 
 # -------------------- Flask App Setup --------------------
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -41,18 +42,35 @@ if __name__ == "__main__":
     if not config: 
         print("Fehler beim Laden der Konfiguration. Bitte überprüfen Sie die config.json.")
         exit(1)
-    PORT = config.get('port')
-    REFRESH_TITLES = config.get('refresh_titles')
-    START_MODE = config.get('autostart_mode')
+    PORT = int(config.get('port'))
+    REFRESH_TITLES = bool(config.get('refresh_titles'))
+    START_MODE = str(config.get('autostart_mode')).lower().strip() if config.get('autostart_mode') else None
+    ANILOADER_TXT_BACKUP = bool(config.get('aniloader_txt_backup'))
+
+    PATH_ANILOADER_TXT = os.path.join(BASE_DIR, "AniLoader.txt")
+    PATH_ANILOADER_TXT_BAK = os.path.join(BASE_DIR, "AniLoader.txt.bak")
     init_db()
     update_index()
 
     if REFRESH_TITLES:
         update_title()
-    if START_MODE.lower().strip() in ["default", "german", "new", "check-missing"]:
-        download(START_MODE.lower().strip())
+    if START_MODE in ["default", "german", "new", "check-missing"]:
+        download(START_MODE)
 
-
+    aniloader_txt = read_aniloader_txt(PATH_ANILOADER_TXT)
+    if len(aniloader_txt) > 0:
+        print(f"Füge {len(aniloader_txt)} Einträge aus aniloader.txt zur Datenbank hinzu...")
+        sanitize_urls = []
+        for url in aniloader_txt:
+            sanitized_url = sanitize_url(url)
+            sanitize_urls.append(sanitized_url)
+            add_url_to_db(sanitized_url)
+            
+        if ANILOADER_TXT_BACKUP:
+            print("Creating backup of AniLoader.txt...")
+            write_to_aniloader_txt_bak(PATH_ANILOADER_TXT_BAK, sanitize_urls)
+    
+    
 
     if TEST:
         print("Running in test mode...")
