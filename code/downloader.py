@@ -99,7 +99,7 @@ def download(mode: str = "default"):
                             if int(episode) < last_downloaded_episode or (int(episode) < last_downloaded_film and int(season) == 0):
                                 continue
                             
-                            if get_existing_file_path(serien_url, season, episode, config) != None:
+                            if get_existing_file_path(serien_url, season, episode, config) is not None:
                                 print(f"[SKIP] Datei für S{int(season):02d}E{int(episode):03d} bereits vorhanden. ")
                                 continue
                             
@@ -133,7 +133,7 @@ def download(mode: str = "default"):
 
                             #get_output_from_download_process(cmd)
                             downloaded_file = find_downloaded_file(season=season, episode=episode, config=config, url=serien_url)
-                            if downloaded_file == None:
+                            if downloaded_file is None:
                                 print(f"[ERROR] Download failed for S{int(season):02d}E{int(episode):03d}. No file found after download process.")
                                 continue
 
@@ -153,11 +153,11 @@ def download(mode: str = "default"):
 
                     # Nach Abschluss aller Downloads den Status der deutschen Vollständigkeit aktualisieren
                     allready_missing_german_episodes = get_missing_german_episodes(db_id)
-                    if len(missing_german_episodes) == 0 and (allready_missing_german_episodes == None or len(allready_missing_german_episodes) == 0):
+                    if len(missing_german_episodes) == 0 and (allready_missing_german_episodes is None or len(allready_missing_german_episodes) == 0):
                         set_deutsch_completion(db_id, True)
                     else:
                         set_deutsch_completion(db_id, False)
-                        if allready_missing_german_episodes != None or len(allready_missing_german_episodes) != 0:
+                        if allready_missing_german_episodes is not None or len(allready_missing_german_episodes) != 0:
                             missing_german_episodes = (allready_missing_german_episodes or []) + missing_german_episodes
                             if missing_german_episodes:
                                 set_missing_german_episodes(db_id, missing_german_episodes)
@@ -214,7 +214,7 @@ def download(mode: str = "default"):
                                 # Aktualisiere die fehlenden deutschen Episoden in der Datenbank
                                 set_missing_german_episodes(db_id, missing_german_episodes)
                                 # Wenn keine fehlenden deutschen Episoden mehr übrig sind, aktualisiere den Status der deutschen Vollständigkeit
-                                if len(missing_german_episodes) == 0 or missing_german_episodes == None:
+                                if len(missing_german_episodes) == 0 or missing_german_episodes is None:
                                     set_deutsch_completion(db_id, True)
 
     #================================================
@@ -267,7 +267,7 @@ def download(mode: str = "default"):
                                 print(f"[ERROR] Could not retrieve languages for episode: {episode_url}")
 
 
-                            if get_existing_file_path(serien_url, season, episode, config) == None:
+                            if get_existing_file_path(serien_url, season, episode, config) is None:
                                 print(f"[ERROR] Download failed for S{int(season):02d}E{int(episode):03d}. No file found after download process.")
                                 continue
                             elif get_existing_file_path(serien_url, season, episode, config) is not None:
@@ -397,7 +397,7 @@ def download(mode: str = "default"):
                                 continue
                             
                             
-                            if get_existing_file_path(serien_url, season, episode, config) == None:
+                            if get_existing_file_path(serien_url, season, episode, config) is None:
                                 print(f"[ERROR] Download failed for S{int(season):02d}E{int(episode):03d}. No file found after download process.")
                                 continue
                             elif get_existing_file_path(serien_url, season, episode, config) is not None:
