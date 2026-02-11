@@ -10,9 +10,7 @@ from url_builder import get_episode_url
 
 
 def get_folder_path(staffel: str, url: str) -> str:
-    """
-        Erhalten des Basisordners für eine Staffel oder einen Film basierend auf der URL und Staffelnummer.
-    
+    """        Erhalten des Basisordners für eine Staffel oder einen Film basierend auf der URL und Staffelnummer.
     :param staffel: Description
     :type staffel: str
     :param url: Description
@@ -34,14 +32,9 @@ def get_folder_path(staffel: str, url: str) -> str:
     ANIME_SEPARATE_MOVIES = config.get('anime_separate_movies')
     SERIEN_SEPARATE_MOVIES = config.get('serien_separate_movies')
     DEDICATED_MOVIES_FOLDER = config.get('dedicated_movies_folder')
-
-    
     if STORAGE_MODE == "standard":
         return DOWNLOAD_PATH
     
-    if STORAGE_MODE == "standard":
-        return DOWNLOAD_PATH
-
     elif STORAGE_MODE == "separate":
         if "https://s.to/" in url:
             if staffel.strip().lower() == "0" or staffel.strip().lower() == "filme":

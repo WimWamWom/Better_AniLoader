@@ -247,7 +247,7 @@ def download_mode_default(db_id: int, title: str, serien_url: str,
     download_path = config.get('download_path')
     
     if not languages or not download_path:
-        print(f"[ERROR] Invalid configuration: languages or download_path missing.")
+        print("[ERROR] Invalid configuration: languages or download_path missing.")
         return
     missing_german_episodes = []
     downloaded_episodes = 0
@@ -305,7 +305,7 @@ def download_mode_german(db_id: int, title: str, serien_url: str,
     
     download_path = config.get('download_path')
     if not download_path:
-        print(f"[ERROR] Invalid configuration: download_path missing.")
+        print("[ERROR] Invalid configuration: download_path missing.")
         return
     
     deutsch = "German Dub"
