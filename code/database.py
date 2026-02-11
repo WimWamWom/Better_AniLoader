@@ -123,21 +123,21 @@ def set_completion_status(db_id: int, complete: bool) -> None:
 def set_last_downloaded_episode(db_id: int, season: int, episode: int) -> None:
     database = connect()
     cursor = database.cursor()
-    cursor.execute("UPDATE anime SET last_season = ?, last_episode = ? WHERE id = ?", (season, episode, id))
+    cursor.execute("UPDATE anime SET last_season = ?, last_episode = ? WHERE id = ?", (season, episode, db_id))
     database.commit()
     database.close()
 
 def set_last_downloaded_season(db_id: int, season: int) -> None:
     database = connect()
     cursor = database.cursor()
-    cursor.execute("UPDATE anime SET last_season = ? WHERE id = ?", (season, id))
+    cursor.execute("UPDATE anime SET last_season = ? WHERE id = ?", (season, db_id))
     database.commit()
     database.close()
 
 def set_last_downloaded_film(db_id: int, film_number: int) -> None:
     database = connect()
     cursor = database.cursor()
-    cursor.execute("UPDATE anime SET last_film = ? WHERE id = ?", (film_number, id))
+    cursor.execute("UPDATE anime SET last_film = ? WHERE id = ?", (film_number, db_id))
     database.commit()
     database.close()
 
