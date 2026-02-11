@@ -113,42 +113,42 @@ def add_url_to_db(url):
     else:
         print(f"Ungültige URL: {url}. Nur s.to und aniworld.to URLs werden unterstützt.")
 
-def set_completion_status(id: int, complete: bool) -> None:
+def set_completion_status(db_id: int, complete: bool) -> None:
     database = connect()
     cursor = database.cursor()
     cursor.execute("UPDATE anime SET complete = ? WHERE id = ?", (1 if complete else 0, id))
     database.commit()
     database.close()
 
-def set_last_downloaded_episode(id: int, season: int, episode: int) -> None:
+def set_last_downloaded_episode(db_id: int, season: int, episode: int) -> None:
     database = connect()
     cursor = database.cursor()
     cursor.execute("UPDATE anime SET last_season = ?, last_episode = ? WHERE id = ?", (season, episode, id))
     database.commit()
     database.close()
 
-def set_last_downloaded_season(id: int, season: int) -> None:
+def set_last_downloaded_season(db_id: int, season: int) -> None:
     database = connect()
     cursor = database.cursor()
     cursor.execute("UPDATE anime SET last_season = ? WHERE id = ?", (season, id))
     database.commit()
     database.close()
 
-def set_last_downloaded_film(id: int, film_number: int) -> None:
+def set_last_downloaded_film(db_id: int, film_number: int) -> None:
     database = connect()
     cursor = database.cursor()
     cursor.execute("UPDATE anime SET last_film = ? WHERE id = ?", (film_number, id))
     database.commit()
     database.close()
 
-def set_deutsch_completion(id: int, complete: bool) -> None:
+def set_deutsch_completion(db_id: int, complete: bool) -> None:
     database = connect()
     cursor = database.cursor()
     cursor.execute("UPDATE anime SET deutsch_komplett = ? WHERE id = ?", (1 if complete else 0, id))
     database.commit()
     database.close()
 
-def set_missing_german_episodes(id: int, fehlende_folgen: list) -> None:
+def set_missing_german_episodes(db_id: int, fehlende_folgen: list) -> None:
     database = connect()
     cursor = database.cursor()
     cursor.execute("UPDATE anime SET fehlende_deutsch_folgen = ? WHERE id = ?", (str(fehlende_folgen), id))
@@ -158,7 +158,7 @@ def set_missing_german_episodes(id: int, fehlende_folgen: list) -> None:
 def update_title():
     database = connect()
     cursor = database.cursor()
-    cursor.execute("SELECT id, url, title FROM anime")
+    cursor.execute("SELECT db_id, url, title FROM anime")
     for anime_id, url, current_title in cursor.fetchall():
         if not current_title or current_title == url:
             title = get_series_title(url)
@@ -167,94 +167,94 @@ def update_title():
     database.commit()
     database.close()
 
-def get_last_downloaded_episode(id: int) ->int:
+def get_last_downloaded_episode(db_id: int) ->int:
     database = connect()
     cursor = database.cursor()
-    cursor.execute("SELECT last_episode FROM anime WHERE id = ?", (id,))
+    cursor.execute("SELECT last_episode FROM anime WHERE id = ?", (db_id,))
     result = cursor.fetchone()
     database.close()
     if result:
         return result[0]
-    raise Exception(f"Keine Serie mit ID {id} gefunden.")
+    raise Exception(f"Keine Serie mit ID {db_id} gefunden.")
 
-def get_last_downloaded_season(id: int) ->int:
+def get_last_downloaded_season(db_id: int) ->int:
     database = connect()
     cursor = database.cursor()
-    cursor.execute("SELECT last_season FROM anime WHERE id = ?", (id,))
+    cursor.execute("SELECT last_season FROM anime WHERE id = ?", (db_id,))
     result = cursor.fetchone()
     database.close()
     if result:
         return result[0]
-    raise Exception(f"Keine Serie mit ID {id} gefunden.")
+    raise Exception(f"Keine Serie mit ID {db_id} gefunden.")
 
-def get_last_downloaded_film(id: int) ->int:
+def get_last_downloaded_film(db_id: int) ->int:
     database = connect()
     cursor = database.cursor()
-    cursor.execute("SELECT last_film FROM anime WHERE id = ?", (id,))
+    cursor.execute("SELECT last_film FROM anime WHERE id = ?", (db_id,))
     result = cursor.fetchone()
     database.close()
     if result:
         return result[0]
-    raise Exception(f"Keine Serie mit ID {id} gefunden.")
+    raise Exception(f"Keine Serie mit ID {db_id} gefunden.")
 
-def get_completion_status(id: int) -> bool:
+def get_completion_status(db_id: int) -> bool:
     """
     Docstring for get_completion_status
     
-    :param id: ID der Serie
-    :type id: int
+    :param db_id: ID der Serie
+    :type db_id: int
     :return: Status der Vollständigkeit (True wenn komplett, False wenn nicht)
     :rtype: bool
     """
     database = connect()
     cursor = database.cursor()
-    cursor.execute("SELECT complete FROM anime WHERE id = ?", (id,))
+    cursor.execute("SELECT complete FROM anime WHERE id = ?", (db_id,))
     result = cursor.fetchone()
     database.close()
     if result is not None:
         return bool(result[0])
-    raise Exception(f"Keine Serie mit ID {id} gefunden.")
+    raise Exception(f"Keine Serie mit ID {db_id} gefunden.")
 
-def get_deutsch_completion_status(id: int) -> bool:
+def get_deutsch_completion_status(db_id: int) -> bool:
     database = connect()
     cursor = database.cursor()
-    cursor.execute("SELECT deutsch_komplett FROM anime WHERE id = ?", (id,))
+    cursor.execute("SELECT deutsch_komplett FROM anime WHERE id = ?", (db_id,))
     result = cursor.fetchone()
     database.close()
     if result is not None:
         return bool(result[0])
-    raise Exception(f"Keine Serie mit ID {id} gefunden.")
+    raise Exception(f"Keine Serie mit ID {db_id} gefunden.")
 
-def get_missing_german_episodes(id: int) -> list:
+def get_missing_german_episodes(db_id: int) -> list:
     database = connect()
     cursor = database.cursor()
-    cursor.execute("SELECT fehlende_deutsch_folgen FROM anime WHERE id = ?", (id,))
+    cursor.execute("SELECT fehlende_deutsch_folgen FROM anime WHERE id = ?", (db_id,))
     result = cursor.fetchone()
     database.close()
     if result is not None:
         return eval(result[0])  # Achtung: eval kann gefährlich sein, wenn die Daten nicht vertrauenswürdig sind
-    raise Exception(f"Keine Serie mit ID {id} gefunden.")
+    raise Exception(f"Keine Serie mit ID {db_id} gefunden.")
 
-def get_series_url_from_db(id: int) -> str:
+def get_series_url_from_db(db_id: int) -> str:
     database = connect()
     cursor = database.cursor()
-    cursor.execute("SELECT url FROM anime WHERE id = ?", (id,))
+    cursor.execute("SELECT url FROM anime WHERE id = ?", (db_id,))
     result = cursor.fetchone()
     database.close()
     if result:
         return result[0]
-    raise Exception(f"Keine Serie mit ID {id} gefunden.")
+    raise Exception(f"Keine Serie mit ID {db_id} gefunden.")
 
-def get_series_title_from_db(id: int) -> str:
+def get_series_title_from_db(db_id: int) -> str:
 
     database = connect()
     cursor = database.cursor()
-    cursor.execute("SELECT title FROM anime WHERE id = ?", (id,))
+    cursor.execute("SELECT title FROM anime WHERE id = ?", (db_id,))
     result = cursor.fetchone()
     database.close()
     if result:
         return result[0]
-    raise Exception(f"Keine Serie mit ID {id} gefunden.")
+    raise Exception(f"Keine Serie mit ID {db_id} gefunden.")
 
 def check_index_exist(index: int) -> bool:
     database = connect()

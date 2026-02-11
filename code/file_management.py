@@ -214,7 +214,7 @@ def move_downloaded_file(serien_url: str, season: str, episode: str, config: dic
     series_title = get_series_title(serien_url)
     
     if not series_title:
-        print(f"[ERROR] Konnte Serien-Titel nicht abrufen")
+        print("[ERROR] Konnte Serien-Titel nicht abrufen")
         return None
     
     if season.strip().lower() == "0" or season.strip().lower() == "filme":
@@ -249,7 +249,7 @@ def rename_file_with_title(file_path: Path, serien_url: str, season: str, episod
     title = get_episode_title(episode_url)
     
     if not title:
-        print(f"[ERROR] Konnte Episodentitel nicht abrufen")
+        print("[ERROR] Konnte Episodentitel nicht abrufen")
         return None
     
     # Bestimme den Sprachsuffix

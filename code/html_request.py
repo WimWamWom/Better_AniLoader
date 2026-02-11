@@ -5,8 +5,6 @@ from bs4 import BeautifulSoup
 from url_builder import get_season_url
 from helper import sanitize_episode_title, sanitize_title
 from urllib.parse import urlparse
-from requests.adapters import HTTPAdapter
-from urllib3.util.connection import create_connection as _origin_create_connection
 import socket
 
 headers = {"User-Agent": "Mozilla/5.0 (compatible; AniLoaderBot/1.0)"}
@@ -41,13 +39,13 @@ def resolve_dns_via_cloudflare(hostname: str) -> str:
 dns_cache: Dict[str, str] = {}
 _original_getaddrinfo = socket.getaddrinfo
 
-def patched_getaddrinfo(host, port, family=0, type=0, proto=0, flags=0):
+def patched_getaddrinfo(host, port, family=0, add_type=0, proto=0, flags=0):
     """Patched getaddrinfo, der DNS-Cache nutzt"""
     if host in dns_cache:
         resolved_ip = dns_cache[host]
         print(f"[DNS-CACHE] Using cached IP for {host}: {resolved_ip}")
-        return _original_getaddrinfo(resolved_ip, port, family, type, proto, flags)
-    return _original_getaddrinfo(host, port, family, type, proto, flags)
+        return _original_getaddrinfo(resolved_ip, port, family, add_type, proto, flags)
+    return _original_getaddrinfo(host, port, family, add_type, proto, flags)
 
 # Patch socket.getaddrinfo
 socket.getaddrinfo = patched_getaddrinfo
@@ -127,7 +125,7 @@ def get_seasons_with_episode_count(url: str):
             
             if not rows:
                 print(f"[WARN] Keine Episode-Rows gefunden für Staffel {staffel}. HTML-Struktur könnte geändert haben.")
-                print(f"[WARN] Versuche alternative Selektoren...")
+                print("[WARN] Versuche alternative Selektoren...")
             
             
             for row in rows:
@@ -155,7 +153,7 @@ def get_seasons_with_episode_count(url: str):
                 else:
                     print(f"[WARN] Kein tbody mit id='season{staffel}' gefunden für aniworld.to")
             else:
-                print(f"[WARN] Keine seasonEpisodesList Tabelle gefunden für aniworld.to")
+                print("[WARN] Keine seasonEpisodesList Tabelle gefunden für aniworld.to")
             
             seasons_with_episode_count[staffel] = episodes
     return seasons_with_episode_count

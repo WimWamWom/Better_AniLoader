@@ -54,10 +54,10 @@ def download(mode: str = "default"):
             print("[INFO] Keine Serien in der Datenbank gefunden. Bitte füge zuerst Serien hinzu.")
             return
         while next_index_exist:
-            id = index
+            db_id = index
             try:
-                title = get_series_title_from_db(id)
-                serien_url = get_series_url_from_db(id)
+                title = get_series_title_from_db(db_id)
+                serien_url = get_series_url_from_db(db_id)
                 start_serie_msg = (f"|| Starting download for series: {title} ||")
                 print("=" * len(start_serie_msg))
                 print(start_serie_msg)
@@ -78,7 +78,7 @@ def download(mode: str = "default"):
                     downloaded_episodes = 0  # Counter für heruntergeladene Episoden
                     
                     # Überprüfe, ob die Serie bereits komplett heruntergeladen wurde
-                    if get_completion_status(id) == True:
+                    if get_completion_status(db_id) == True:
                         print(f"[SKIP] Serie '{title}' bereits komplett heruntergeladen.")
                         continue
 
@@ -86,9 +86,9 @@ def download(mode: str = "default"):
                     if seasons_with_episode_count == -1:
                         raise Exception("Error retrieving seasons or episodes.")
                     
-                    last_downloaded_film = get_last_downloaded_film(id)
-                    last_downloaded_season = get_last_downloaded_season(id)
-                    last_downloaded_episode = get_last_downloaded_episode(id)
+                    last_downloaded_film = get_last_downloaded_film(db_id)
+                    last_downloaded_season = get_last_downloaded_season(db_id)
+                    last_downloaded_episode = get_last_downloaded_episode(db_id)
 
                     for season in seasons_with_episode_count:
                         # Überspringe bereits heruntergeladene Staffeln
@@ -144,40 +144,40 @@ def download(mode: str = "default"):
                             
                             # Nach Abschluss des Downloads die letzte heruntergeladene Episode aktualisieren (inklusive Filme in Staffel 0)
                             if int(season) == 0 or season.strip().lower() == "filme":
-                                set_last_downloaded_film(id, int(episode))
-                            set_last_downloaded_episode(id, int(season), int(episode))
+                                set_last_downloaded_film(db_id, int(episode))
+                            set_last_downloaded_episode(db_id, int(season), int(episode))
 
                         # Nach Abschluss einer Staffel die letzte heruntergeladene Staffel aktualisieren      
-                        set_last_downloaded_season(id, int(season))
+                        set_last_downloaded_season(db_id, int(season))
 
 
                     # Nach Abschluss aller Downloads den Status der deutschen Vollständigkeit aktualisieren
-                    allready_missing_german_episodes = get_missing_german_episodes(id)
+                    allready_missing_german_episodes = get_missing_german_episodes(db_id)
                     if len(missing_german_episodes) == 0 and (allready_missing_german_episodes == None or len(allready_missing_german_episodes) == 0):
-                        set_deutsch_completion(id, True)
+                        set_deutsch_completion(db_id, True)
                     else:
-                        set_deutsch_completion(id, False)
+                        set_deutsch_completion(db_id, False)
                         if allready_missing_german_episodes != None or len(allready_missing_german_episodes) != 0:
                             missing_german_episodes = (allready_missing_german_episodes or []) + missing_german_episodes
                             if missing_german_episodes:
-                                set_missing_german_episodes(id, missing_german_episodes)
+                                set_missing_german_episodes(db_id, missing_german_episodes)
             
                     # Nur als komplett markieren, wenn mindestens eine Episode heruntergeladen wurde
                     if downloaded_episodes > 0:
-                        set_completion_status(id, True)
+                        set_completion_status(db_id, True)
                     else:
-                        print(f"[INFO] Keine neuen Episoden heruntergeladen für Series {id}. Status wird NICHT auf komplett gesetzt.")
+                        print(f"[INFO] Keine neuen Episoden heruntergeladen für Series {db_id}. Status wird NICHT auf komplett gesetzt.")
 
     #================================================
     #German Mode
     #================================================
                             
                 elif mode == "german":
-                    if get_deutsch_completion_status(id) == True:
+                    if get_deutsch_completion_status(db_id) == True:
                         print(f"[SKIP] Serie '{title}' bereits komplett auf Deutsch verfügbar.")
                         continue           
                     deutsch = "German Dub"
-                    missing_german_episodes = get_missing_german_episodes(id)
+                    missing_german_episodes = get_missing_german_episodes(db_id)
                     if seasons_with_episode_count == -1:
                         raise Exception("Error retrieving seasons or episodes.")
                     for season in seasons_with_episode_count:
@@ -212,10 +212,10 @@ def download(mode: str = "default"):
                                     print(f"[ERROR] Error during download process: {e}")
                                     continue
                                 # Aktualisiere die fehlenden deutschen Episoden in der Datenbank
-                                set_missing_german_episodes(id, missing_german_episodes)
+                                set_missing_german_episodes(db_id, missing_german_episodes)
                                 # Wenn keine fehlenden deutschen Episoden mehr übrig sind, aktualisiere den Status der deutschen Vollständigkeit
                                 if len(missing_german_episodes) == 0 or missing_german_episodes == None:
-                                    set_deutsch_completion(id, True)
+                                    set_deutsch_completion(db_id, True)
 
     #================================================
     #Check Missing Mode
@@ -275,11 +275,11 @@ def download(mode: str = "default"):
 
                             # Nach Abschluss des Downloads die letzte heruntergeladene Episode aktualisieren (inklusive Filme in Staffel 0)
                             if int(season) == 0 or season.strip().lower() == "filme":
-                                set_last_downloaded_film(id, int(episode))
-                            set_last_downloaded_episode(id, int(season), int(episode))
+                                set_last_downloaded_film(db_id, int(episode))
+                            set_last_downloaded_episode(db_id, int(season), int(episode))
 
                         # Nach Abschluss einer Staffel die letzte heruntergeladene Staffel aktualisieren
-                        set_last_downloaded_season(id, int(season))
+                        set_last_downloaded_season(db_id, int(season))
 
     #================================================
     #New Mode
@@ -291,14 +291,14 @@ def download(mode: str = "default"):
                     if seasons_with_episode_count == -1:
                         raise Exception("Error retrieving seasons or episodes.")
                     # Nur bei kompletten Serien auf neue Episoden prüfen
-                    if get_completion_status(id) == False:
+                    if get_completion_status(db_id) == False:
                         print(f"[SKIP] Serie '{title}' noch nicht komplett heruntergeladen. Bitte zuerst im 'default' Modus ausführen.")
                         continue
 
                     # Letzte heruntergeladene Werte aus DB holen
-                    last_downloaded_season = get_last_downloaded_season(id)
-                    last_downloaded_episode = get_last_downloaded_episode(id)
-                    last_downloaded_film = get_last_downloaded_film(id)
+                    last_downloaded_season = get_last_downloaded_season(db_id)
+                    last_downloaded_episode = get_last_downloaded_episode(db_id)
+                    last_downloaded_film = get_last_downloaded_film(db_id)
 
                     # Letzte verfügbare Werte ermitteln
                     last_available_season = max(seasons_with_episode_count.keys(), key=int)
@@ -406,14 +406,14 @@ def download(mode: str = "default"):
 
                             # Nach Abschluss des Downloads die letzte heruntergeladene Episode aktualisieren
                             if int(season) == 0 or season.strip().lower() == "filme":
-                                set_last_downloaded_film(id, int(episode))
-                            set_last_downloaded_episode(id, int(season), int(episode))
+                                set_last_downloaded_film(db_id, int(episode))
+                            set_last_downloaded_episode(db_id, int(season), int(episode))
 
                         # Nach Abschluss einer Staffel die letzte heruntergeladene Staffel aktualisieren
-                        set_last_downloaded_season(id, int(season))
+                        set_last_downloaded_season(db_id, int(season))
 
             except Exception as e:
-                print(f"[ERROR] Error processing series with ID {id}: {e}")
+                print(f"[ERROR] Error processing series with ID {db_id}: {e}")
             
             # Nach jeder Serie zum nächsten Index wechseln (WICHTIG: Das muss NACH allen Modi sein!)
             index += 1

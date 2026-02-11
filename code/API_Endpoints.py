@@ -43,8 +43,8 @@ def upload_txt():
         if file.filename == '':
             return jsonify({'status': 'error', 'msg': 'Keine Datei ausgewählt'}), 400
         
-        # Sicherer Dateiname (Path Traversal Protection)
-        filename = secure_filename(file.filename)
+        # Sicherer Dateiname (Path Traversal Protection)            
+        filename = secure_filename(str(file.filename))
         if not filename.endswith('.txt'):
             return jsonify({'status': 'error', 'msg': 'Nur TXT-Dateien erlaubt'}), 400
         
@@ -267,7 +267,7 @@ def database():
             item = dict(zip(columns, row))
             try:
                 item['fehlende'] = eval(item.get('fehlende_deutsch_folgen', '[]'))
-            except:
+            except Exception:
                 item['fehlende'] = []
             result.append(item)
         

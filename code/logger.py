@@ -1,7 +1,5 @@
 import sys
-import os
 from datetime import datetime
-from pathlib import Path
 from config import DATA_DIR
 
 class Logger:

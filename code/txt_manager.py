@@ -2,7 +2,7 @@ import os
 
 def create_aniloader_txt(file_path):
     if not os.path.exists(file_path):
-        with open(file_path, 'w', encoding='utf-8') as file:
+        with open(file_path, 'w', encoding='utf-8'):
             pass
 
 

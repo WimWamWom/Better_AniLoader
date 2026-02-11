@@ -8,8 +8,10 @@ PATH_ANILOADER_TXT = BASE_DIR / "AniLoader.txt"
 DOWNLOAD_DIR = BASE_DIR / "Downloads"
 DATA_DIR = BASE_DIR / "data"
 CONFIG_PATH = DATA_DIR / 'config.json'
-os.makedirs(DATA_DIR, exist_ok=True) if not DATA_DIR.exists() else None
-os.makedirs(DOWNLOAD_DIR, exist_ok=True) if not DOWNLOAD_DIR.exists() else None
+if not DATA_DIR.exists():
+    os.makedirs(DATA_DIR, exist_ok=True) 
+if not DOWNLOAD_DIR.exists():  
+    os.makedirs(DOWNLOAD_DIR, exist_ok=True) 
 
 standart_werte = {
         "languages": ["German Dub", "German Sub", "English Dub", "English Sub"],
@@ -143,7 +145,7 @@ def save_config(config_json: dict) -> bool:
         with open(tmp_path, 'w', encoding='utf-8') as f:
             json.dump(config_json, f, indent=2, ensure_ascii=False)
         os.replace(tmp_path, CONFIG_PATH)
-        print(f"[CONFIG] gespeichert")
+        print("[CONFIG] gespeichert")
         return True
     except Exception as exception:
         print(f"[CONFIG-ERROR] save_config: {exception}")
