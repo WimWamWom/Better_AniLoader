@@ -21,10 +21,6 @@ def start_download_process(cmd_command: str) -> bool:
     except Exception as error:
         print(f"Fehler beim Download: {error}")
         return False
-    except Exception as error:
-        print(f"Fehler beim Download: {error}")
-        return False
-
 
 
 
@@ -182,6 +178,8 @@ def download(mode: str = "default"):
                         continue           
                     deutsch = "German Dub"
                     missing_german_episodes = get_missing_german_episodes(id)
+                    if seasons_with_episode_count == -1:
+                        raise Exception("Error retrieving seasons or episodes.")
                     for season in seasons_with_episode_count:
                         for episode in seasons_with_episode_count[season]:
                             episode_url = get_episode_url(serien_url, season, episode)
@@ -206,7 +204,7 @@ def download(mode: str = "default"):
                                                 delete_old_non_german_version(serien_url=serien_url, season=season, episode=episode, config=config)
                                         
                                         move_and_rename_downloaded_file(serien_url=serien_url, season=season, episode=episode, language=deutsch)
-                                        print(f"[SUCCESS] Download successfull for episode {episode_url}")
+                                        print(f"[OK ] Download successfull for episode {episode_url}")
                                         missing_german_episodes.remove(episode_url)
 
 

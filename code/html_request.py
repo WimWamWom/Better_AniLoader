@@ -150,7 +150,7 @@ def get_seasons_with_episode_count(url: str):
                         if meta_episode:
                             episode_num = meta_episode.get("content")
                             if episode_num:
-                                episodes.append(episode_num)
+                                episodes.append(str(episode_num))
                     print(f"[OK] {len(episodes)} Episoden für Staffel {staffel} gefunden")
                 else:
                     print(f"[WARN] Kein tbody mit id='season{staffel}' gefunden für aniworld.to")

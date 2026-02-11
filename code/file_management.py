@@ -170,13 +170,14 @@ def find_downloaded_file(season: str, episode: str, config: dict, url: str) -> O
     titel = get_series_title(url)
     download_path = config.get('download_path')
     if not download_path:
-        print("Fehler: Download-Pfad nicht in der Konfiguration gefunden.")
+        print("[ERROR] Download-Pfad nicht in der Konfiguration gefunden.")
         return None
     
-    base_path = Path(download_path) / titel
+
+    base_path = Path(download_path / titel)
 
     if not base_path.exists():
-        print(f"✗ Download-Pfad existiert nicht: {download_path}")
+        print(f"[ERROR] Download-Pfad existiert nicht: {download_path}")
         return None
     
     # Bestimme das Such-Muster (S01E05 oder Film001)
@@ -248,7 +249,7 @@ def rename_file_with_title(file_path: Path, serien_url: str, season: str, episod
     title = get_episode_title(episode_url)
     
     if not title:
-        print(f"✗ Konnte Episodentitel nicht abrufen")
+        print(f"[ERROR] Konnte Episodentitel nicht abrufen")
         return None
     
     # Bestimme den Sprachsuffix
@@ -281,7 +282,7 @@ def rename_file_with_title(file_path: Path, serien_url: str, season: str, episod
     # Umbenennen
     try:
         file_path.rename(new_file_path)
-        print(f"[SUCCESS] Umbenannt: {file_path.name} → {new_filename}")
+        print(f"[OK] Umbenannt: {file_path.name} → {new_filename}")
         return new_file_path
     except Exception as e:
         print(f"[ERROR] Fehler beim Umbenennen: {e}")
@@ -301,7 +302,7 @@ def move_and_rename_downloaded_file(serien_url: str, season: str, episode: str, 
     if not final_file:
         return None
     
-    print(f"[SUCCESS] Erfolgreich verarbeitet: {final_file.name}\n")
+    print(f"[OK] Erfolgreich verarbeitet: {final_file.name}\n")
     return final_file
 
 
@@ -321,7 +322,7 @@ def delete_old_non_german_version(serien_url: str, season: str, episode: str, co
     if file_path.is_file():
         try:
             file_path.unlink()
-            print(f"[SUCCESS] Alte Datei gelöscht: {file_path.name}")
+            print(f"[OK] Alte Datei gelöscht: {file_path.name}")
             return True
         except Exception as e:
             print(f"[ERROR] Fehler beim Löschen der alten Datei: {e}")
