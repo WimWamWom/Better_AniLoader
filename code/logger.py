@@ -59,6 +59,8 @@ class Logger:
         print(f"[{timestamp}] {message}")
 
 # Globale Logger-Instanz
+
+
 _logger = Logger()
 
 def start_run_logging():

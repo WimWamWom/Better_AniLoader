@@ -1,4 +1,21 @@
-from database import check_index_exist, get_missing_german_episodes, set_completion_status, get_series_title_from_db, get_series_url_from_db, get_last_downloaded_episode, get_last_downloaded_season, get_last_downloaded_film, get_completion_status, get_deutsch_completion_status, set_deutsch_completion, set_last_downloaded_episode, set_last_downloaded_film, set_last_downloaded_season, set_missing_german_episodes
+from database import (
+    get_missing_german_episodes, 
+    set_completion_status,
+    get_series_title_from_db,
+    get_series_url_from_db, 
+    get_last_downloaded_episode,
+    get_last_downloaded_season,
+    get_last_downloaded_film,
+    get_completion_status, 
+    get_deutsch_completion_status,   
+    set_missing_german_episodes,
+    set_deutsch_completion, 
+    set_last_downloaded_episode, 
+    set_last_downloaded_film, 
+    set_last_downloaded_season, 
+    set_missing_german_episodes,
+    check_index_exist
+             )
 from html_request import get_seasons_with_episode_count, get_languages_for_episode, get_episode_title
 from file_management import move_and_rename_downloaded_file, delete_old_non_german_version, get_existing_file_path, find_downloaded_file
 from url_builder import get_episode_url
@@ -78,7 +95,7 @@ def download(mode: str = "default"):
                     downloaded_episodes = 0  # Counter für heruntergeladene Episoden
                     
                     # Überprüfe, ob die Serie bereits komplett heruntergeladen wurde
-                    if get_completion_status(db_id) == True:
+                    if get_completion_status(db_id) is True:
                         print(f"[SKIP] Serie '{title}' bereits komplett heruntergeladen.")
                         continue
 
@@ -173,7 +190,7 @@ def download(mode: str = "default"):
     #================================================
                             
                 elif mode == "german":
-                    if get_deutsch_completion_status(db_id) == True:
+                    if get_deutsch_completion_status(db_id) is True:
                         print(f"[SKIP] Serie '{title}' bereits komplett auf Deutsch verfügbar.")
                         continue           
                     deutsch = "German Dub"
@@ -291,7 +308,7 @@ def download(mode: str = "default"):
                     if seasons_with_episode_count == -1:
                         raise Exception("Error retrieving seasons or episodes.")
                     # Nur bei kompletten Serien auf neue Episoden prüfen
-                    if get_completion_status(db_id) == False:
+                    if get_completion_status(db_id) is False:
                         print(f"[SKIP] Serie '{title}' noch nicht komplett heruntergeladen. Bitte zuerst im 'default' Modus ausführen.")
                         continue
 
@@ -302,8 +319,10 @@ def download(mode: str = "default"):
 
                     # Letzte verfügbare Werte ermitteln
                     last_available_season = max(seasons_with_episode_count.keys(), key=int)
-                    last_available_episode = max(seasons_with_episode_count[str(last_downloaded_season)]) if str(last_downloaded_season) in seasons_with_episode_count else 0
-            
+                    if str(last_downloaded_season) in seasons_with_episode_count:
+                        last_available_episode = max(seasons_with_episode_count[str(last_downloaded_season)]) 
+                    else:
+                        last_available_episode = 0
                     last_available_film = 0
                     if "0" in seasons_with_episode_count:
                         last_available_film = max(seasons_with_episode_count["0"])
@@ -323,7 +342,7 @@ def download(mode: str = "default"):
                     
                     # Neue Episoden in letzter Staffel
                     elif last_downloaded_season == int(last_available_season) and int(last_available_episode) > last_downloaded_episode:
-                        print(f"[INFO] Neue Episode(n) in Staffel {last_downloaded_season} gefunden (E{last_downloaded_episode + 1} bis E{last_available_episode}).")
+                        print(f"[INFO] Neue Episode(n) in Staffel {last_downloaded_season} gefunden ab (E{last_downloaded_episode + 1} ")
                         download_seasons.append(str(last_downloaded_season))
                     
                     # Neue Filme
