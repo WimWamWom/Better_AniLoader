@@ -1,4 +1,3 @@
-import os
 from flask import Blueprint, request, jsonify, render_template, send_file
 from werkzeug.utils import secure_filename
 import shutil

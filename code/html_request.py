@@ -158,52 +158,75 @@ def get_seasons_with_episode_count(url: str):
             seasons_with_episode_count[staffel] = episodes
     return seasons_with_episode_count
 
-def get_languages_for_episode(episode_url: str):
-    episode_html = cloudflare_session.get(episode_url, timeout=5)
-    episode_html.raise_for_status()
-    soup = BeautifulSoup(episode_html.text, "html.parser")
+# ===============================
+# Sprachinformationen 
+# ===============================
+
+def get_language_from_sto(soup) -> List[str]:
     sprachen: List[str] = []
     vorhandene_sprachen: List[str] = []
-    if "https://s.to/" in episode_url:
-        svg_icons = soup.find_all("svg", class_="watch-language" )
-        for svg in svg_icons:
-            use = svg.find("use")
-            if not use:
+    svg_icons = soup.find_all("svg", class_="watch-language" )
+    for svg in svg_icons:
+        use = svg.find("use")
+        if not use:
                 continue
-            href = str(use.get("href"))
-            sprache = href.removeprefix("#icon-flag-")
+        href = str(use.get("href"))
+        sprache = href.removeprefix("#icon-flag-")
+        if sprache in vorhandene_sprachen or not sprache:
+            continue
+        vorhandene_sprachen.append(sprache)
+        if sprache.lower() == "german":
+            sprachen.append("German Dub")
+        elif sprache.lower() == "english":
+            sprachen.append("English Dub")
+        elif sprache.lower() == "english-german":
+            sprachen.append("German Sub")
+        else:
+            sprachen.append(sprache)
+    
+    return sprachen
+
+def get_language_from_aniworld(soup) -> List[str]:
+    sprachen: List[str] = []
+    vorhandene_sprachen: List[str] = []
+    lang_div = soup.find("div", class_="changeLanguageBox")
+    if lang_div is not None:
+        for img in lang_div.find_all("img"):
+            sprache = str(img.get("src")).removeprefix("/public/img/").removesuffix(".svg")
             if sprache in vorhandene_sprachen or not sprache:
                 continue
             vorhandene_sprachen.append(sprache)
             if sprache.lower() == "german":
-                sprachen.append("German Dub")
+                sprache = "German Dub"
             elif sprache.lower() == "english":
-                sprachen.append("English Dub")
-            elif sprache.lower() == "english-german":
-                sprachen.append("German Sub")
-            else:
-                sprachen.append(sprache)
+                sprache = "English Dub"
+            elif sprache.lower() == "japanese-german":
+                sprache = "German Sub"
+            elif sprache.lower() == "japanese-english":
+                sprache = "English Sub"
+            sprachen.append(sprache)    
+    return sprachen
+
+def get_languages_for_episode(episode_url: str):
+    episode_html = cloudflare_session.get(episode_url, timeout=5)
+    episode_html.raise_for_status()
+    soup = BeautifulSoup(episode_html.text, "html.parser")
+
+
+    
+    if "https://s.to/" in episode_url:
+        sprachen = get_language_from_sto(soup)
 
     elif "https://aniworld.to/" in episode_url:
-        lang_div = soup.find("div", class_="changeLanguageBox")
-        if lang_div is not None:
-            for img in lang_div.find_all("img"):
-                sprache = str(img.get("src")).removeprefix("/public/img/").removesuffix(".svg")
-                if sprache in vorhandene_sprachen or not sprache:
-                    continue
-                vorhandene_sprachen.append(sprache)
-                if sprache.lower() == "german":
-                    sprache = "German Dub"
-                elif sprache.lower() == "english":
-                    sprache = "English Dub"
-                elif sprache.lower() == "japanese-german":
-                    sprache = "German Sub"
-                elif sprache.lower() == "japanese-english":
-                    sprache = "English Sub"
-                sprachen.append(sprache)
+        sprachen = get_language_from_aniworld(soup)
     else:
         return -1
     return sprachen
+
+
+# ===============================
+# Titelinformationen
+# ===============================
 
 def get_series_title(url):
     try:
@@ -222,39 +245,48 @@ def get_series_title(url):
     except Exception as e:
         print(f"[FEHLER] Konnte Serien-Titel nicht abrufen ({url}): {e}")
 
+def get_episode_title_from_sto(soup, english_title: bool = False):
+        title_tag = soup.find("h2", class_="h4 mb-1")
+        if title_tag:
+            title_element  = title_tag.get_text(strip=True)
+            cleaned = re.sub(r'^S\d{2}E\d{2}:\s*', '', title_element)
+            if english_title is False:
+                cleaned = re.sub(r'\s*\([^)]*\)\s*$', '', cleaned)
+                title = sanitize_episode_title(cleaned)
+                return title
+            elif english_title is True:
+                # Extrahiere nur Text innerhalb der Klammern
+                match = re.search(r'\(([^)]*)\)', cleaned)
+                if match:
+                    cleaned = match.group(1)
+                title = sanitize_episode_title(cleaned)
+                return title
+            else:
+                return None
+
+def get_episode_title_from_aniworld(soup, english_title: bool = False):
+    if english_title is False:
+        title_tag = soup.find("span", class_="episodeGermanTitle")
+        if title_tag:
+            title = sanitize_episode_title(title_tag.get_text(strip=True))
+            return title
+    elif english_title is True:
+        title_tag = soup.find("small", class_="episodeEnglishTitle")
+        if title_tag:
+            title = sanitize_episode_title(title_tag.get_text(strip=True))
+            return title
+    else:
+        return None
+
 def get_episode_title(episode_url: str, english_title: bool = False):
     episode_html = cloudflare_session.get(episode_url, timeout=5)
     episode_html.raise_for_status()
     soup = BeautifulSoup(episode_html.text, "html.parser")
     title = None
     if "https://s.to/" in episode_url:
-        title_tag = soup.find("h2", class_="h4 mb-1")
-        if title_tag:
-            title_element  = title_tag.get_text(strip=True)
-            cleaned = re.sub(r'^S\d{2}E\d{2}:\s*', '', title_element)
-            sprachen = get_languages_for_episode(episode_url)
-            if sprachen != -1:
-                if "German Dub" in sprachen and english_title == False:
-                    cleaned = re.sub(r'\s*\([^)]*\)\s*$', '', cleaned)
-                else:
-                    # Extrahiere nur Text innerhalb der Klammern
-                    match = re.search(r'\(([^)]*)\)', cleaned)
-                    if match:
-                        cleaned = match.group(1)
-            title = sanitize_episode_title(cleaned)
-            return title
+        title = get_episode_title_from_sto(soup, english_title)
 
     elif "https://aniworld.to/" in episode_url:
-        # Suche nach deutschem Titel in <span class="episodeGermanTitle">
-        if english_title == False:
-            title_tag = soup.find("span", class_="episodeGermanTitle")
-            if title_tag:
-                title = sanitize_episode_title(title_tag.get_text(strip=True))
-                return title
-        # Fallback: englischer Titel in <small class="episodeEnglishTitle">
-        title_tag = soup.find("small", class_="episodeEnglishTitle")
-        if title_tag:
-            title = sanitize_episode_title(title_tag.get_text(strip=True))
-            return title
+        title = get_episode_title_from_aniworld(soup, english_title)
     
-    return False
+    return title
