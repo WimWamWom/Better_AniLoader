@@ -16,8 +16,20 @@ from database import (
     set_missing_german_episodes,
     check_index_exist
              )
-from html_request import get_seasons_with_episode_count, get_languages_for_episode, get_episode_title
-from file_management import move_and_rename_downloaded_file, delete_old_non_german_version, get_existing_file_path, find_downloaded_file
+
+from html_request import (
+    get_seasons_with_episode_count, 
+    get_languages_for_episode, 
+    get_episode_title
+            )
+
+from file_management import (
+    move_and_rename_downloaded_file, 
+    delete_old_non_german_version, 
+    get_existing_file_path, 
+    find_downloaded_file
+            )
+
 from url_builder import get_episode_url
 from config import load_config
 from logger import start_run_logging, stop_run_logging
