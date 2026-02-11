@@ -231,6 +231,32 @@ def finalize_season(db_id: int, season: str) -> None:
     """Mark season as completed in database."""
     set_last_downloaded_season(db_id, int(season))
 
+def download_and_track_episode(serien_url: str, season: str, episode: str,
+                               languages: List[str], download_path: str,
+                               config: dict, db_id: int,
+                               missing_german_episodes: List[str],
+                               track_missing: bool = True) -> bool:
+    """
+    Download an episode and track progress. Returns True if successful.
+    
+    :param track_missing: If True, adds episode_url to missing_german_episodes on failure
+    """
+    success, language, episode_url = process_episode_download(
+        serien_url, season, episode, languages, download_path, config
+    )
+    
+    if success:
+        print(f"[OK] Download successful for S{int(season):02d}E{int(episode):03d}")
+        update_download_progress(db_id, season, episode)
+        
+        if language and language != "German Dub" and episode_url:
+            missing_german_episodes.append(episode_url)
+        return True
+    elif track_missing and episode_url and language != "German Dub":
+        missing_german_episodes.append(episode_url)
+    
+    return False
+
 # ============================================
 # Mode-Specific Download Functions
 # ============================================
@@ -376,19 +402,11 @@ def download_mode_check_missing(db_id: int, title: str, serien_url: str,
                     missing_german_episodes.append(get_episode_url(serien_url, season, episode))
                 continue
             
-            # Download missing episode
-            success, language, episode_url = process_episode_download(
-                serien_url, season, episode, languages, download_path, config
+            # Download missing episode and track progress
+            download_and_track_episode(
+                serien_url, season, episode, languages, download_path,
+                config, db_id, missing_german_episodes, track_missing=True
             )
-            
-            if success:
-                print(f"[OK] Download successful for S{int(season):02d}E{int(episode):03d}")
-                update_download_progress(db_id, season, episode)
-                
-                if language and language != "German Dub":
-                    missing_german_episodes.append(episode_url)
-            elif episode_url and language != "German Dub":
-                missing_german_episodes.append(episode_url)
         
         finalize_season(db_id, season)
     
@@ -475,17 +493,11 @@ def download_mode_new(db_id: int, title: str, serien_url: str,
                 print(f"[SKIP] Datei für S{int(season):02d}E{int(episode):03d} bereits vorhanden.")
                 continue
             
-            # Download episode
-            success, language, episode_url = process_episode_download(
-                serien_url, season, episode, languages, download_path, config
+            # Download episode and track progress
+            download_and_track_episode(
+                serien_url, season, episode, languages, download_path,
+                config, db_id, missing_german_episodes, track_missing=False
             )
-            
-            if success:
-                print(f"[OK] Download successful for S{int(season):02d}E{int(episode):03d}")
-                update_download_progress(db_id, season, episode)
-                
-                if language and language != "German Dub":
-                    missing_german_episodes.append(episode_url)
         
         finalize_season(db_id, season)
     

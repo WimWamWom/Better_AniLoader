@@ -61,6 +61,31 @@ def get_folder_path(staffel: str, url: str) -> str:
     print(f"Ungültige URL oder Staffel: {url} Staffel: {staffel}. Rückfall auf Standard-Downloadpfad.")       
     return DOWNLOAD_PATH
 
+def get_target_folder(folder_path: str, season: str, series_title: str, config: dict, file_name: Optional[str] = None) -> Path:
+    """
+    Bestimmt den Zielordner für eine Episode oder einen Film.
+    
+    :param folder_path: Basis-Ordnerpfad
+    :param season: Staffelnummer (0 oder "filme" für Filme)
+    :param series_title: Titel der Serie
+    :param config: Konfigurationsdictionary
+    :param file_name: Optional - Dateiname für separaten Filme-Ordner
+    :return: Pfad zum Zielordner
+    """
+    if season.strip().lower() == "0" or season.strip().lower() == "filme":
+        # Film-Logik
+        if config.get('dedicated_movies_folder') or config.get('serien_separate_movies') or config.get('anime_separate_movies'):
+            if file_name:
+                return Path(folder_path) / file_name
+            else:
+                return Path(folder_path)
+        else:
+            return Path(folder_path) / series_title / "Filme"
+    else:
+        # Normale Episode
+        return Path(folder_path) / series_title / f"Staffel {season}"
+
+
 def get_existing_file_path(serien_url: str, season: str, episode: str, config) -> Optional[Path]:
     """
     Erhalen des vollständigen Pfads für eine Episode oder einen Film basierend auf der Serien-URL, Staffel, Episode.
@@ -90,14 +115,9 @@ def get_existing_file_path(serien_url: str, season: str, episode: str, config) -
     if not config:
         print("Fehler beim Laden der Konfiguration.")
         return None
-    #Für Filme könnte es je nach Einstellung direkt im Serienordner liegen oder in einem separaten Filme-Ordner. Daher müssen wir beide Möglichkeiten prüfen.
-    if season.strip().lower() == "0" or season.strip().lower() == "filme":
-        if config.get('dedicated_movies_folder') or config.get('serien_separate_movies') or config.get('anime_separate_movies'):
-            target_folder = Path(folder_path) / file_name
-        else:
-            target_folder = Path(folder_path) / series_title / "Filme"
-    else:
-        target_folder = Path(folder_path) / series_title / f"Staffel {season}"
+    
+    # Verwende die zentrale Hilfsfunktion zur Bestimmung des Zielordners
+    target_folder = get_target_folder(folder_path, season, series_title, config, file_name)
     
     if not target_folder.exists():
         return None
@@ -207,14 +227,8 @@ def move_downloaded_file(serien_url: str, season: str, episode: str, config: dic
         print("[ERROR] Konnte Serien-Titel nicht abrufen")
         return None
     
-    if season.strip().lower() == "0" or season.strip().lower() == "filme":
-        if config.get('dedicated_movies_folder') or config.get('serien_separate_movies') or config.get('anime_separate_movies'):
-            target_folder = Path(folder_path)
-        else:
-            target_folder = Path(folder_path) / series_title / "Filme"
-    else:
-        target_folder = Path(folder_path) / series_title / f"Staffel {season}"
-    
+    # Verwende die zentrale Hilfsfunktion zur Bestimmung des Zielordners
+    target_folder = get_target_folder(folder_path, season, series_title, config)
     target_folder.mkdir(parents=True, exist_ok=True)
     
     # Zieldatei-Pfad
