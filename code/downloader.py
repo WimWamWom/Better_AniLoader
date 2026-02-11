@@ -13,7 +13,6 @@ from database import (
     set_last_downloaded_episode, 
     set_last_downloaded_film, 
     set_last_downloaded_season, 
-    set_missing_german_episodes,
     check_index_exist
              )
 
@@ -35,13 +34,15 @@ from config import load_config
 from logger import start_run_logging, stop_run_logging
 import subprocess
 import time
+import shlex
 
 def start_download_process(cmd_command: str) -> bool:
     try:
         # Set Windows console to UTF-8 (65001) before running aniworld
-        # Let output go directly to console instead of capturing
+        # Split the command into a list for safer execution
         utf8_cmd = f"chcp 65001 >nul & {cmd_command}"
-        result = subprocess.run(utf8_cmd, shell=True)
+        cmd_list = shlex.split(utf8_cmd)
+        result = subprocess.run(cmd_list)
         # Wait for file system to catch up after download and for .part files to be finalized
         # Check for up to 30 seconds if .part files are being written
         if result.returncode == 0:

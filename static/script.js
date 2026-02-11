@@ -212,7 +212,6 @@ async function fetchOverview() {
   } catch(e) { console.error(e); }
 }
 
-// Queue functionality removed
 
 /* ---------- Settings (config) ---------- */
 const langList = document.getElementById('lang-list');
@@ -644,24 +643,17 @@ async function fetchDatabase() {
       `;
       dbBody.appendChild(tr);
     });
-    // attach queue buttons
-    dbBody.querySelectorAll('button[data-queue-id]').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const id = Number(e.currentTarget.getAttribute('data-queue-id'));
-        if (id) queueAdd(id);
-      });
-    });
+
     // attach restore buttons
     dbBody.querySelectorAll('button[data-restore-id]').forEach(btn => {
       btn.addEventListener('click', async (e) => {
         const id = Number(e.currentTarget.getAttribute('data-restore-id'));
         if (!id) return;
-        const ok = confirm('Diesen als gelöscht markierten Anime erneut herunterladen?\nDer Status wird zurückgesetzt und er wird der Warteschlange hinzugefügt.');
+        const ok = confirm('Diesen als gelöscht markierten Anime erneut herunterladen?\nDer Status wird zurückgesetzt.');
         if (!ok) return;
         try {
-          await fetch('/anime/restore', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, queue: true }) });
+          await fetch('/anime/restore', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) });
           await fetchDatabase();
-          await fetchQueue();
         } catch(err) {
           console.error('restore anime failed', err);
           alert('Reaktivieren fehlgeschlagen');
@@ -1045,7 +1037,7 @@ function copyToClipboard(text) {
 fetchOverview();
 fetchDatabase();
 fetchStatus();
-// fetchLogs, fetchDisk, fetchQueue removed
+
 const INTERVAL_MS = 5000;
 const STAGGER_MS = 1000;
 function scheduleStaggered(fn, offsetMs) {
@@ -1057,6 +1049,4 @@ function scheduleStaggered(fn, offsetMs) {
 scheduleStaggered(fetchOverview, 0);
 scheduleStaggered(fetchDatabase, STAGGER_MS);
 scheduleStaggered(fetchStatus, STAGGER_MS * 2);
-// fetchLogs, fetchDisk, fetchQueue staggered polling removed
 
-// Logs and queue toolbar actions removed
