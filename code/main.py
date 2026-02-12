@@ -48,17 +48,21 @@ if __name__ == "__main__":
     REFRESH_TITLES = bool(config.get('refresh_titles'))
     START_MODE = str(config.get('autostart_mode')).lower().strip() if config.get('autostart_mode') else None
     ANILOADER_TXT_BACKUP = bool(config.get('aniloader_txt_backup'))
-
+    if not PORT or not START_MODE or REFRESH_TITLES is None or ANILOADER_TXT_BACKUP is None:
+        print("Ungültige Konfiguration. Bitte überprüfen Sie die config.json.")
+        exit(1)
 
     init_db()
     update_index()
-
-    if REFRESH_TITLES:
-        update_title()
+    update_title()
     if START_MODE in ["default", "german", "new", "check-missing"]:
         download(START_MODE)
-
+    elif START_MODE == "none" or START_MODE == "off" or START_MODE == "false" or START_MODE is "null":
+        print("Autostart deaktiviert.")
+    else:
+        print(f"Unbekannter Autostart-Modus: {START_MODE}.")
     aniloader_txt = read_aniloader_txt(PATH_ANILOADER_TXT)
+
     if len(aniloader_txt) > 0:
         print(f"Füge {len(aniloader_txt)} Einträge aus aniloader.txt zur Datenbank hinzu...")
         sanitize_urls = []
