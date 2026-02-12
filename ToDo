@@ -5,3 +5,7 @@ analyse_last_run
 del_default_out_when_mode_separat only_when_finish
 remove_[letzte Folge]_or_simular
 rename_and_move nach jedem download
+
+aniworld s.to support:
+pip install --upgrade aniworld
+aniworld --language "German Dub" --episode https://s.to/serie/the-rookie/staffel-1/episode-2
