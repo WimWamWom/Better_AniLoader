@@ -185,9 +185,11 @@ def find_downloaded_file(season: str, episode: str, config: dict, url: str) -> O
     for file in download_path_obj.glob(f"*{prefix}*.mp4"):
         if file.is_file():
             return file
-    
+    if titel is None:
+        print(f"[ERROR] Konnte Serien-Titel nicht abrufen für URL: {url}")
+        return None
     # Falls nicht gefunden, suche im Serien-Titel-Unterordner
-    serie_folder = download_path_obj / titel
+    serie_folder = Path(Path(download_path_obj) / Path(titel))
     if serie_folder.exists():
         for file in serie_folder.glob(f"*{prefix}*.mp4"):
             if file.is_file():

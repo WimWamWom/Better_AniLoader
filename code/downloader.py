@@ -237,7 +237,7 @@ def download(mode: str = "default"):
                                             missing_german_episodes.remove(episode_url)
                                         elif existing_file is None:
                                             print(f"[ERROR] Download failed for episode {episode_url}. No file found after download process.")
-                                            continuey
+                                            continue
 
                                 except Exception as e:
                                     print(f"[ERROR] Error during download process: {e}")
