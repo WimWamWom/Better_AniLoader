@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  aniloader:
+    build: .
+    container_name: b_aniloader
+    ports:
+      - "5050:5050"  # Port anpassen falls nötig
+    volumes:
+      # Persistente Daten (Datenbank, Konfiguration)
+      - ./data:/app/data
+      # Download-Verzeichnis (bei storage_mode: standard)
+      - ./Downloads:/app/Downloads
+      # Optional: Separate Pfade für Animes (bei storage_mode: separate)
+      # - /mnt/user/Anime:/animes
+      # Optional: Separate Pfade für Serien (bei storage_mode: separate)
+      # - /mnt/user/TV-Shows:/serien
+    environment:
+      - PYTHONUNBUFFERED=1
+      - TZ=Europe/Berlin  # Timezone für Logs
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5050/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s

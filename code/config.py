@@ -3,15 +3,15 @@ import os
 import json
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-PATH_ANILOADER_TXT_BAK = BASE_DIR / "AniLoader.txt.bak"
-PATH_ANILOADER_TXT = BASE_DIR / "AniLoader.txt"
-DOWNLOAD_DIR = BASE_DIR / "Downloads"
 DATA_DIR = BASE_DIR / "data"
+PATH_ANILOADER_TXT_BAK = DATA_DIR / "AniLoader.txt.bak"
+PATH_ANILOADER_TXT = DATA_DIR / "AniLoader.txt"
+BASE_DOWNLOAD_DIR = BASE_DIR / "Downloads"
 CONFIG_PATH = DATA_DIR / 'config.json'
 if not DATA_DIR.exists():
     os.makedirs(DATA_DIR, exist_ok=True) 
-if not DOWNLOAD_DIR.exists():  
-    os.makedirs(DOWNLOAD_DIR, exist_ok=True) 
+if not BASE_DOWNLOAD_DIR.exists():  
+    os.makedirs(BASE_DOWNLOAD_DIR, exist_ok=True) 
 
 standart_werte = {
         "languages": ["German Dub", "German Sub", "English Dub", "English Sub"],
@@ -25,13 +25,13 @@ standart_werte = {
         "serien_separate_movies": False,
         "dedicated_movies_folder": False,
         "base_path": str(BASE_DIR),
-        "download_path": str(DOWNLOAD_DIR),
+        "download_path": str(BASE_DOWNLOAD_DIR),
         "data_folder_path": str(DATA_DIR),
-        "anime_path": str(Path(DOWNLOAD_DIR) / "Anime"),
-        "series_path": str(Path(DOWNLOAD_DIR) / "Serien"),
-        "movies_path": str(Path(DOWNLOAD_DIR) / "Filme"),
-        "anime_movies_path": str(Path(DOWNLOAD_DIR) / "Filme-Anime"),
-        "serien_movies_path": str(Path(DOWNLOAD_DIR) / "Filme-Serien"),
+        "anime_path": str(Path(BASE_DOWNLOAD_DIR) / "Anime"),
+        "series_path": str(Path(BASE_DOWNLOAD_DIR) / "Serien"),
+        "movies_path": str(Path(BASE_DOWNLOAD_DIR) / "Filme"),
+        "anime_movies_path": str(Path(BASE_DOWNLOAD_DIR) / "Filme-Anime"),
+        "serien_movies_path": str(Path(BASE_DOWNLOAD_DIR) / "Filme-Serien"),
         
 }
 

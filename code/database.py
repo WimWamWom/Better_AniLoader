@@ -34,7 +34,8 @@ def init_db() -> None:
             fehlende_deutsch_folgen TEXT DEFAULT '[]',
             last_film INTEGER DEFAULT 0,
             last_episode INTEGER DEFAULT 0,
-            last_season INTEGER DEFAULT 0
+            last_season INTEGER DEFAULT 0,
+            folder_name TEXT DEFAULT NULL
         )
     """)
 
@@ -60,6 +61,17 @@ def init_db() -> None:
             print("[DB] queue.position Spalte hinzugefügt und initialisiert")
     except Exception as exception:
         print(f"[DB-ERROR] Migration queue.position: {exception}")
+
+    # Migration: folder_name-Spalte in anime
+    try:
+        cursor.execute("PRAGMA table_info(anime)")
+        cols = [r[1] for r in cursor.fetchall()]
+        if "folder_name" not in cols:
+            cursor.execute("ALTER TABLE anime ADD COLUMN folder_name TEXT DEFAULT NULL")
+            database.commit()
+            print("[DB] anime.folder_name Spalte hinzugefügt")
+    except Exception as exception:
+        print(f"[DB-ERROR] Migration anime.folder_name: {exception}")
 
     database.commit()
     database.close()
@@ -265,3 +277,33 @@ def check_index_exist(index: int) -> bool:
     if result is not None:
         return True
     return False
+
+def get_folder_name_from_db(db_id: int) -> str | None:
+    """Gibt den gespeicherten Ordnernamen für eine Serie zurück (z.B. 'Titel (2020) [tt1234567]')."""
+    database = connect()
+    cursor = database.cursor()
+    cursor.execute("SELECT folder_name FROM anime WHERE id = ?", (db_id,))
+    result = cursor.fetchone()
+    database.close()
+    if result:
+        return result[0]
+    return None
+
+def set_folder_name_in_db(db_id: int, folder_name: str) -> None:
+    """Speichert den Ordnernamen für eine Serie in der Datenbank."""
+    database = connect()
+    cursor = database.cursor()
+    cursor.execute("UPDATE anime SET folder_name = ? WHERE id = ?", (folder_name, db_id))
+    database.commit()
+    database.close()
+
+def get_db_id_by_url(url: str) -> int | None:
+    """Gibt die Datenbank-ID für eine URL zurück."""
+    database = connect()
+    cursor = database.cursor()
+    cursor.execute("SELECT id FROM anime WHERE url = ?", (url,))
+    result = cursor.fetchone()
+    database.close()
+    if result:
+        return result[0]
+    return None
