@@ -8,7 +8,8 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y \
     wget \
     curl \
-    && rm -rf /var/lib/apt/lists/*
+    ffmpeg \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Python-Abhängigkeiten kopieren und installieren
 COPY requirements.txt .
@@ -35,6 +36,7 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y \
     wget \
     curl \
+    ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 
 
