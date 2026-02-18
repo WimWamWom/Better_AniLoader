@@ -146,7 +146,7 @@ def download(mode: str = "default"):
                                     return -1
                                 if sprache != "German Dub":
                                         missing_german_episodes.append(episode_url)
-                                cmd = str(f'aniworld --language "{sprache}" -o "{DOWNLOAD_PATH}" --episode {episode_url}')
+                                cmd = str(f'aniworld --language "{sprache}" -a Download -o "{DOWNLOAD_PATH}" {episode_url}')
                                 try:
                                     print(f"\n[OK] Starting download command: {cmd}")
                                     succes = start_download_process(cmd)
@@ -220,7 +220,7 @@ def download(mode: str = "default"):
                                     print(f"[SKIP] Episode {episode_url} noch nicht auf Deutsch verfügbar.")
                                     continue
 
-                                cmd = str(f'aniworld --language "{deutsch}" -o "{DOWNLOAD_PATH}" --episode {episode_url}')
+                                cmd = str(f'aniworld --language "{deutsch}" -a Download -o "{DOWNLOAD_PATH}" {episode_url}')
                                 try:
                                     print(f"\n[OK] Starting download command: {cmd}")
                                     succes = start_download_process(cmd)
@@ -284,7 +284,7 @@ def download(mode: str = "default"):
                                     return -1
                                 if sprache != "German Dub":
                                         missing_german_episodes.append(episode_url)
-                                cmd = str(f'aniworld --language "{sprache}" -o "{DOWNLOAD_PATH}" --episode {episode_url}')
+                                cmd = str(f'aniworld --language "{sprache}" -a Download -o "{DOWNLOAD_PATH}" {episode_url}')
                                 try:
                                     print(f"\n[OK] Starting download command: {cmd}")
                                     succes = start_download_process(cmd)
@@ -419,7 +419,7 @@ def download(mode: str = "default"):
                                     return -1
                                 if sprache != "German Dub":
                                     missing_german_episodes.append(episode_url)
-                                cmd = str(f'aniworld --language "{sprache}" -o "{DOWNLOAD_PATH}" --episode {episode_url}')
+                                cmd = str(f'aniworld --language "{sprache}" -a Download -o "{DOWNLOAD_PATH}" {episode_url}')
                                 try:
                                     print(f"\n[OK] Starting download command: {cmd}")
                                     succes = start_download_process(cmd)
