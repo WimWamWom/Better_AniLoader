@@ -94,12 +94,13 @@ def update_index():
                 fehlende_deutsch_folgen TEXT DEFAULT '[]',
                 last_film INTEGER DEFAULT 0,
                 last_episode INTEGER DEFAULT 0,
-                last_season INTEGER DEFAULT 0
+                last_season INTEGER DEFAULT 0,
+                folder_name TEXT DEFAULT NULL
             )
         """)
         cursor.execute("""
-            INSERT INTO anime (title, url, complete, deutsch_komplett, deleted, fehlende_deutsch_folgen, last_film, last_episode, last_season)
-            SELECT title, url, complete, deutsch_komplett, deleted, fehlende_deutsch_folgen, last_film, last_episode, last_season
+            INSERT INTO anime (title, url, complete, deutsch_komplett, deleted, fehlende_deutsch_folgen, last_film, last_episode, last_season, folder_name)
+            SELECT title, url, complete, deutsch_komplett, deleted, fehlende_deutsch_folgen, last_film, last_episode, last_season, folder_name
             FROM anime_backup
         """)
         cursor.execute("DROP TABLE anime_backup;")
@@ -170,7 +171,7 @@ def set_missing_german_episodes(db_id: int, fehlende_folgen: list) -> None:
 def update_title():
     database = connect()
     cursor = database.cursor()
-    cursor.execute("SELECT db_id, url, title FROM anime")
+    cursor.execute("SELECT id, url, title FROM anime")
     for anime_id, url, current_title in cursor.fetchall():
         if not current_title or current_title == url:
             title = get_series_title(url)

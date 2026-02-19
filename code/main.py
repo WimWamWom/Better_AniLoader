@@ -48,19 +48,16 @@ if __name__ == "__main__":
     REFRESH_TITLES = bool(config.get('refresh_titles'))
     START_MODE = str(config.get('autostart_mode')).lower().strip() if config.get('autostart_mode') else None
     ANILOADER_TXT_BACKUP = bool(config.get('aniloader_txt_backup'))
-    if not PORT or not START_MODE or REFRESH_TITLES is None or ANILOADER_TXT_BACKUP is None:
+    if not PORT or REFRESH_TITLES is None or ANILOADER_TXT_BACKUP is None:
         print("Ungültige Konfiguration. Bitte überprüfen Sie die config.json.")
         exit(1)
+    update_title = bool(config.get('refresh_titles'))
 
     init_db()
     update_index()
-    update_title()
-    if START_MODE in ["default", "german", "new", "check-missing"]:
-        download(START_MODE)
-    elif START_MODE == "none" or START_MODE == "off" or START_MODE == "false" or START_MODE is "null":
-        print("Autostart deaktiviert.")
-    else:
-        print(f"Unbekannter Autostart-Modus: {START_MODE}.")
+    if update_title:
+        update_title()
+
     aniloader_txt = read_aniloader_txt(PATH_ANILOADER_TXT)
 
     if len(aniloader_txt) > 0:
@@ -75,7 +72,12 @@ if __name__ == "__main__":
             print("Creating backup of AniLoader.txt...")
             write_to_aniloader_txt_bak(PATH_ANILOADER_TXT_BAK, sanitize_urls)
     
-    
+    if START_MODE in ["default", "german", "new", "check-missing"]:
+        download(START_MODE)
+    elif START_MODE == "none" or START_MODE == "off" or START_MODE == "false" or START_MODE == "null" or START_MODE is None:
+        print("Autostart deaktiviert.")
+    else:
+        print(f"Unbekannter Autostart-Modus: {START_MODE}.")
 
     if TEST:
         print("Running in test mode...")

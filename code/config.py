@@ -92,13 +92,18 @@ def load_config():
                     raise Exception("Ungültiger Wert für 'min_free_gb'. Erwartet wird eine Zahl.")
 
 
-                autostart_mode = str(config_json.get('autostart_mode')).strip().lower()
+                autostart_mode = config_json.get('autostart_mode')
                 allowed_modes = {None, 'default', 'german', 'new', 'check-missing'}
-                if isinstance(autostart_mode, str):
-                    if autostart_mode not in {'', 'none', 'off', 'disabled', 'false', 'null'} or autostart_mode in allowed_modes or autostart_mode is None:
-                       raise Exception(f"Ungültiger Wert für 'autostart_mode'. Erwartet wird einer der folgenden Werte: {allowed_modes} oder eine falsy Angabe wie '', 'none', 'off', 'disabled', 'false', 'null'.")
+                falsy_values = {'', 'none', 'off', 'disabled', 'false', 'null'}
+                
+                if autostart_mode is None or autostart_mode in allowed_modes:
+                    # Valid: None or one of the allowed modes
+                    pass
+                elif isinstance(autostart_mode, str) and autostart_mode.strip().lower() in falsy_values:
+                    # Valid: falsy string value
+                    pass
                 else:
-                    raise Exception("Ungültiger Wert für 'autostart_mode'. Erwartet wird ein String.")
+                    raise Exception(f"Ungültiger Wert für 'autostart_mode'. Erwartet wird einer der folgenden Werte: {allowed_modes} oder eine falsy Angabe wie '', 'none', 'off', 'disabled', 'false', 'null'.")
 
                 if not isinstance(str(config_json.get('download_path')).strip(), str):
                     raise Exception("Ungültiger Wert für 'download_path'. Erwartet wird ein String.")                

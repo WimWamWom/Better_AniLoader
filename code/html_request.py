@@ -39,13 +39,13 @@ def resolve_dns_via_cloudflare(hostname: str) -> str:
 dns_cache: Dict[str, str] = {}
 _original_getaddrinfo = socket.getaddrinfo
 
-def patched_getaddrinfo(host, port, family=0, add_type=0, proto=0, flags=0):
+def patched_getaddrinfo(host, port, family=0, type=0, proto=0, flags=0):  
     """Patched getaddrinfo, der DNS-Cache nutzt"""
     if host in dns_cache:
         resolved_ip = dns_cache[host]
         print(f"[DNS] Using cached IP for {host}: {resolved_ip}")
-        return _original_getaddrinfo(resolved_ip, port, family, add_type, proto, flags)
-    return _original_getaddrinfo(host, port, family, add_type, proto, flags)
+        return _original_getaddrinfo(resolved_ip, port, family, type, proto, flags)
+    return _original_getaddrinfo(host, port, family, type, proto, flags)
 
 # Patch socket.getaddrinfo
 socket.getaddrinfo = patched_getaddrinfo
