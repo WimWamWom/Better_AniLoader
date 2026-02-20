@@ -1,0 +1,537 @@
+const searchInput = document.getElementById('searchInput');
+const searchBtn = document.getElementById('searchBtn');
+const searchSpinner = document.getElementById('searchSpinner');
+const resultsDiv = document.getElementById('results');
+const overlay = document.getElementById('overlay');
+const languageSelect = document.getElementById('languageSelect');
+const providerSelect = document.getElementById('providerSelect');
+const seasonAccordion = document.getElementById('seasonAccordion');
+const episodeSpinner = document.getElementById('episodeSpinner');
+const selectAllCb = document.getElementById('selectAll');
+const statusBar = document.getElementById('statusBar');
+const statusText = document.getElementById('statusText');
+const downloadAllBtn = document.getElementById('downloadAllBtn');
+const downloadSelectedBtn = document.getElementById('downloadSelectedBtn');
+const randomBtn = document.getElementById('randomBtn');
+const browseDiv = document.getElementById('browse');
+const newAnimesGrid = document.getElementById('newAnimesGrid');
+const popularAnimesGrid = document.getElementById('popularAnimesGrid');
+
+let currentSeasons = [];
+let currentSeriesTitle = '';
+let currentSeriesUrl = '';
+// Provider data per language label
+let availableProviders = null;
+// Static list of providers rendered into the template
+const staticProviders = Array.from(providerSelect.options).map(o => o.value);
+
+// Site toggle state
+let currentSite = 'aniworld';
+
+// Downloaded folders cache
+let downloadedFolders = [];
+
+async function loadDownloadedFolders() {
+  try {
+    const resp = await fetch('/api/downloaded-folders');
+    const data = await resp.json();
+    downloadedFolders = data.folders || [];
+  } catch (e) { /* best-effort */ }
+}
+
+function normalizeQuotes(s) {
+  return s.replace(/[\u2018\u2019\u2032\u0060]/g, "'").replace(/[\u201C\u201D\u201E]/g, '"');
+}
+
+function isDownloaded(title) {
+  if (!downloadedFolders.length || !title) return false;
+  const clean = normalizeQuotes(unesc(title).replace(/\s*\(.*$/, '').trim().toLowerCase());
+  return downloadedFolders.some(f => normalizeQuotes(f.toLowerCase()).startsWith(clean));
+}
+
+function addDownloadedBadge(card, title) {
+  if (isDownloaded(title)) {
+    const badge = document.createElement('div');
+    badge.className = 'downloaded-badge';
+    card.style.position = 'relative';
+    card.appendChild(badge);
+  }
+}
+
+function toggleSite() {
+  const toggle = document.getElementById('siteToggle');
+  currentSite = toggle.checked ? 'sto' : 'aniworld';
+  localStorage.setItem('selectedSite', currentSite);
+
+  // Update labels
+  document.getElementById('labelAniworld').classList.toggle('active', !toggle.checked);
+  document.getElementById('labelSto').classList.toggle('active', toggle.checked);
+
+  // Update heading
+  const heading = document.getElementById('pageHeading');
+  if (heading) heading.textContent = toggle.checked ? 'SerienStream Downloader' : 'AniWorld Downloader';
+
+  // Update search placeholder
+  searchInput.placeholder = toggle.checked ? 'Search for series...' : 'Search for anime...';
+
+  // Clear search results
+  resultsDiv.innerHTML = '';
+  searchInput.value = '';
+
+  // Toggle browse sections (only available for AniWorld)
+  browseDiv.style.display = toggle.checked ? 'none' : '';
+
+  // Toggle Random button
+  randomBtn.style.display = toggle.checked ? 'none' : '';
+
+  // Update language dropdown
+  rebuildLanguageSelect();
+
+  // Reset providers
+  availableProviders = null;
+}
+
+function rebuildLanguageSelect() {
+  const langs = currentSite === 'sto' ? (window.STO_LANGS || {}) : (window.ANIWORLD_LANGS || {});
+  languageSelect.innerHTML = '';
+  for (const [key, label] of Object.entries(langs)) {
+    const opt = document.createElement('option');
+    opt.value = label;
+    opt.textContent = label;
+    languageSelect.appendChild(opt);
+  }
+}
+
+// Restore site toggle state from localStorage
+(function syncSiteToggle() {
+  const toggle = document.getElementById('siteToggle');
+  const saved = localStorage.getItem('selectedSite');
+  if (saved === 'sto') toggle.checked = true;
+  if (toggle && toggle.checked) {
+    currentSite = 'sto';
+    document.getElementById('labelAniworld').classList.remove('active');
+    document.getElementById('labelSto').classList.add('active');
+    const heading = document.getElementById('pageHeading');
+    if (heading) heading.textContent = 'SerienStream Downloader';
+    searchInput.placeholder = 'Search for series...';
+    browseDiv.style.display = 'none';
+    randomBtn.style.display = 'none';
+    rebuildLanguageSelect();
+  }
+})();
+
+searchInput.addEventListener('keydown', e => { if (e.key === 'Enter') doSearch(); });
+searchInput.addEventListener('input', () => {
+  if (!searchInput.value.trim()) {
+    resultsDiv.innerHTML = '';
+    browseDiv.style.display = currentSite === 'sto' ? 'none' : '';
+  }
+});
+languageSelect.addEventListener('change', updateProviderDropdown);
+
+function renderBrowseCards(grid, items) {
+  grid.innerHTML = '';
+  items.forEach(item => {
+    const card = document.createElement('div');
+    card.className = 'browse-card';
+    card.onclick = () => openSeries(item.url);
+    card.innerHTML =
+      `<img src="${esc(item.poster_url)}" alt="">` +
+      `<div class="browse-info">` +
+      `<div class="browse-title">${esc(item.title)}</div>` +
+      `<div class="browse-genre">${esc(item.genre)}</div>` +
+      `</div>`;
+    addDownloadedBadge(card, item.title);
+    grid.appendChild(card);
+  });
+}
+
+(async function loadBrowse() {
+  try {
+    const [newResp, popResp] = await Promise.all([
+      fetch('/api/new-animes'),
+      fetch('/api/popular-animes'),
+    ]);
+    await loadDownloadedFolders();
+    const newData = await newResp.json();
+    const popData = await popResp.json();
+    if (newData.results) renderBrowseCards(newAnimesGrid, newData.results);
+    if (popData.results) renderBrowseCards(popularAnimesGrid, popData.results);
+  } catch (e) { /* browse load is best-effort */ }
+})();
+
+async function doSearch() {
+  const keyword = searchInput.value.trim();
+  if (!keyword) return;
+  searchBtn.disabled = true;
+  searchSpinner.style.display = 'block';
+  resultsDiv.innerHTML = '';
+  browseDiv.style.display = 'none';
+  try {
+    const resp = await fetch('/api/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ keyword, site: currentSite })
+    });
+    const data = await resp.json();
+    renderResults(data.results || []);
+  } catch (e) {
+    showToast('Search failed: ' + e.message);
+  } finally {
+    searchBtn.disabled = false;
+    searchSpinner.style.display = 'none';
+  }
+}
+
+async function doRandom() {
+  if (currentSite === 'sto') {
+    showToast('Random is not available for S.TO');
+    return;
+  }
+  randomBtn.disabled = true;
+  try {
+    const resp = await fetch('/api/random');
+    const data = await resp.json();
+    if (data.error) { showToast(data.error); return; }
+    openSeries(data.url);
+  } catch (e) {
+    showToast('Failed to fetch random anime: ' + e.message);
+  } finally {
+    randomBtn.disabled = false;
+  }
+}
+
+function renderResults(results) {
+  resultsDiv.innerHTML = '';
+  if (!results.length) {
+    resultsDiv.innerHTML = '<div style="width:100%;text-align:center;color:#888;padding:40px">No results found.</div>';
+    return;
+  }
+  results.forEach(r => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.onclick = () => openSeries(r.url);
+    card.innerHTML = `<img src="" alt="" data-url="${esc(r.url)}"><div class="info"><div class="title">${esc(r.title)}</div></div>`;
+    addDownloadedBadge(card, r.title);
+    resultsDiv.appendChild(card);
+    loadPoster(r.url, card.querySelector('img'));
+  });
+}
+
+async function loadPoster(url, imgEl) {
+  try {
+    const resp = await fetch('/api/series?url=' + encodeURIComponent(url));
+    const data = await resp.json();
+    if (data.poster_url) imgEl.src = data.poster_url;
+  } catch (e) { /* ignore poster load failure */ }
+}
+
+async function openSeries(url) {
+  overlay.style.display = 'block';
+  document.getElementById('modalPoster').src = '';
+  document.getElementById('modalTitle').textContent = 'Loading...';
+  document.getElementById('modalGenres').textContent = '';
+  document.getElementById('modalYear').textContent = '';
+  document.getElementById('modalDesc').textContent = '';
+  seasonAccordion.innerHTML = '';
+  statusBar.classList.remove('active');
+  availableProviders = null;
+  currentSeriesUrl = url;
+  currentSeriesTitle = '';
+  rebuildLanguageSelect();
+  resetProviderDropdown();
+  checkLangSeparation();
+
+  try {
+    const [seriesResp, seasonsResp] = await Promise.all([
+      fetch('/api/series?url=' + encodeURIComponent(url)),
+      fetch('/api/seasons?url=' + encodeURIComponent(url))
+    ]);
+    const seriesData = await seriesResp.json();
+    const seasonsData = await seasonsResp.json();
+
+    currentSeriesTitle = seriesData.title || 'Unknown';
+    document.getElementById('modalTitle').textContent = currentSeriesTitle;
+    if (seriesData.poster_url) document.getElementById('modalPoster').src = seriesData.poster_url;
+    document.getElementById('modalGenres').textContent = (seriesData.genres || []).join(', ');
+    document.getElementById('modalYear').textContent = seriesData.release_year || '';
+    document.getElementById('modalDesc').textContent = seriesData.description || '';
+
+    currentSeasons = seasonsData.seasons || [];
+    buildAccordion(currentSeasons);
+  } catch (e) {
+    showToast('Failed to load series: ' + e.message);
+  }
+}
+
+function buildAccordion(seasons) {
+  seasonAccordion.innerHTML = '';
+  episodeSpinner.style.display = 'block';
+  selectAllCb.checked = false;
+
+  // Fetch all seasons' episodes in parallel
+  const fetches = seasons.map((s, i) =>
+    fetch('/api/episodes?url=' + encodeURIComponent(s.url))
+      .then(r => r.json())
+      .then(data => ({ index: i, episodes: data.episodes || [] }))
+      .catch(() => ({ index: i, episodes: [] }))
+  );
+
+  Promise.all(fetches).then(results => {
+    episodeSpinner.style.display = 'none';
+    let firstProviderUrl = null;
+
+    results.sort((a, b) => a.index - b.index);
+    results.forEach(({ index, episodes }) => {
+      const season = seasons[index];
+      const section = document.createElement('div');
+      section.className = 'season-section';
+      section.dataset.seasonIndex = index;
+
+      const label = season.are_movies
+        ? `Movies (${episodes.length} episodes)`
+        : `Season ${season.season_number} (${episodes.length} episodes)`;
+
+      // Header
+      const header = document.createElement('div');
+      header.className = 'season-header' + (index === 0 ? ' expanded' : '');
+      header.innerHTML =
+        `<div class="season-label"><span class="season-arrow">&#9654;</span> ${esc(label)}</div>` +
+        `<label class="season-all-label" onclick="event.stopPropagation()"><input type="checkbox" onchange="toggleSeasonAll(this, ${index})"> All</label>`;
+      header.addEventListener('click', () => toggleSeason(index));
+
+      // Body
+      const body = document.createElement('div');
+      body.className = 'season-body' + (index === 0 ? ' expanded' : '');
+      body.id = 'seasonBody-' + index;
+
+      episodes.forEach(ep => {
+        const div = document.createElement('div');
+        div.className = 'episode-item';
+        const title = ep.title_en || ep.title_de || '';
+        div.innerHTML = `<input type="checkbox" value="${esc(ep.url)}" data-season="${index}"><span class="ep-num">E${ep.episode_number}</span><span class="ep-title">${esc(title)}</span>`;
+        body.appendChild(div);
+      });
+
+      if (!firstProviderUrl && episodes.length) {
+        firstProviderUrl = episodes[0].url;
+      }
+
+      section.appendChild(header);
+      section.appendChild(body);
+      seasonAccordion.appendChild(section);
+    });
+
+    // Fetch providers from first episode
+    if (firstProviderUrl) {
+      fetchProviders(firstProviderUrl);
+    }
+  });
+}
+
+function toggleSeason(index) {
+  const section = seasonAccordion.querySelector(`[data-season-index="${index}"]`);
+  if (!section) return;
+  const header = section.querySelector('.season-header');
+  const body = section.querySelector('.season-body');
+  header.classList.toggle('expanded');
+  body.classList.toggle('expanded');
+}
+
+function toggleSeasonAll(checkbox, seasonIndex) {
+  const body = document.getElementById('seasonBody-' + seasonIndex);
+  if (!body) return;
+  body.querySelectorAll('input[type=checkbox]').forEach(cb => cb.checked = checkbox.checked);
+  syncSelectAll();
+}
+
+function toggleSelectAll() {
+  const checked = selectAllCb.checked;
+  seasonAccordion.querySelectorAll('input[type=checkbox]').forEach(cb => cb.checked = checked);
+}
+
+function syncSelectAll() {
+  const all = seasonAccordion.querySelectorAll('.episode-item input[type=checkbox]');
+  const checked = seasonAccordion.querySelectorAll('.episode-item input[type=checkbox]:checked');
+  selectAllCb.checked = all.length > 0 && all.length === checked.length;
+}
+
+function getAllEpisodeUrls() {
+  return Array.from(seasonAccordion.querySelectorAll('.episode-item input[type=checkbox]')).map(cb => cb.value);
+}
+
+function getSelectedEpisodeUrls() {
+  return Array.from(seasonAccordion.querySelectorAll('.episode-item input[type=checkbox]:checked')).map(cb => cb.value);
+}
+
+async function fetchProviders(episodeUrl) {
+  try {
+    const resp = await fetch('/api/providers?url=' + encodeURIComponent(episodeUrl));
+    const data = await resp.json();
+    if (data.providers) {
+      availableProviders = data.providers;
+      updateProviderDropdown();
+    }
+  } catch (e) {
+    // If provider fetch fails, keep the static list
+  }
+}
+
+function resetProviderDropdown() {
+  providerSelect.innerHTML = '';
+  staticProviders.forEach(p => {
+    const opt = document.createElement('option');
+    opt.value = p;
+    opt.textContent = p;
+    providerSelect.appendChild(opt);
+  });
+  selectDefaultProvider();
+}
+
+function updateProviderDropdown() {
+  if (!availableProviders) return;
+
+  const lang = languageSelect.value;
+  const providers = availableProviders[lang];
+
+  providerSelect.innerHTML = '';
+  if (providers && providers.length) {
+    providers.forEach(p => {
+      const opt = document.createElement('option');
+      opt.value = p;
+      opt.textContent = p;
+      providerSelect.appendChild(opt);
+    });
+  } else {
+    staticProviders.forEach(p => {
+      const opt = document.createElement('option');
+      opt.value = p;
+      opt.textContent = p;
+      providerSelect.appendChild(opt);
+    });
+  }
+  selectDefaultProvider();
+}
+
+function selectDefaultProvider() {
+  for (const opt of providerSelect.options) {
+    if (opt.value === 'VOE') {
+      providerSelect.value = 'VOE';
+      return;
+    }
+  }
+}
+
+async function startDownload(all) {
+  const episodes = all ? getAllEpisodeUrls() : getSelectedEpisodeUrls();
+  if (!episodes.length) { showToast(all ? 'No episodes available.' : 'No episodes selected.'); return; }
+
+  const language = languageSelect.value;
+  const provider = providerSelect.value;
+
+  downloadAllBtn.disabled = true;
+  downloadSelectedBtn.disabled = true;
+  try {
+    const resp = await fetch('/api/download', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        episodes,
+        language,
+        provider,
+        title: currentSeriesTitle,
+        series_url: currentSeriesUrl
+      })
+    });
+    const data = await resp.json();
+    if (data.error) {
+      showToast(data.error);
+      return;
+    }
+
+    showToast('Added to download queue');
+    if (typeof loadQueue === 'function') loadQueue();
+  } catch (e) {
+    showToast('Download request failed: ' + e.message);
+  } finally {
+    downloadAllBtn.disabled = false;
+    downloadSelectedBtn.disabled = false;
+  }
+}
+
+function closeModal() {
+  overlay.style.display = 'none';
+}
+function closeModalOutside(e) { if (e.target === overlay) closeModal(); }
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.display = 'block';
+  setTimeout(() => t.style.display = 'none', 4000);
+}
+
+function unesc(s) {
+  const d = document.createElement('textarea');
+  d.innerHTML = s || '';
+  return d.value;
+}
+
+function esc(s) {
+  const d = document.createElement('div');
+  d.textContent = unesc(s);
+  return d.innerHTML;
+}
+
+let langSeparationEnabled = false;
+const downloadAllLangsBtn = document.getElementById('downloadAllLangsBtn');
+
+async function checkLangSeparation() {
+  try {
+    const resp = await fetch('/api/settings');
+    const data = await resp.json();
+    langSeparationEnabled = data.lang_separation === '1';
+    if (downloadAllLangsBtn) {
+      downloadAllLangsBtn.style.display = langSeparationEnabled ? '' : 'none';
+    }
+  } catch (e) { /* ignore */ }
+}
+
+async function startDownloadAllLangs() {
+  const episodes = getAllEpisodeUrls();
+  if (!episodes.length) { showToast('No episodes available.'); return; }
+  if (!availableProviders) { showToast('Provider data not loaded yet.'); return; }
+
+  downloadAllLangsBtn.disabled = true;
+  downloadAllBtn.disabled = true;
+  downloadSelectedBtn.disabled = true;
+
+  let queued = 0;
+  try {
+    for (const [lang, providers] of Object.entries(availableProviders)) {
+      if (!providers.length) continue;
+      const provider = providers.includes('VOE') ? 'VOE' : providers[0];
+      const resp = await fetch('/api/download', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          episodes,
+          language: lang,
+          provider,
+          title: currentSeriesTitle,
+          series_url: currentSeriesUrl
+        })
+      });
+      const data = await resp.json();
+      if (!data.error) queued++;
+    }
+    showToast('Queued downloads for ' + queued + ' language(s)');
+    if (typeof loadQueue === 'function') loadQueue();
+  } catch (e) {
+    showToast('Failed to queue downloads: ' + e.message);
+  } finally {
+    downloadAllLangsBtn.disabled = false;
+    downloadAllBtn.disabled = false;
+    downloadSelectedBtn.disabled = false;
+  }
+}

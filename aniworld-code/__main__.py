@@ -1,0 +1,42 @@
+# ========================
+# Nuitka project configuration
+# ========================
+
+# Basic flags
+# nuitka-project: --static-libpython=no
+# nuitka-project: --assume-yes-for-downloads
+# nuitka-project: --python-flag=-m
+
+# Include hidden imports (dynamically loaded modules that Nuitka can't detect)
+# nuitka-project: --include-package=urllib3.contrib
+# nuitka-project: --include-package=aniworld.extractors
+
+# Include data files/directories
+# nuitka-project: --include-data-dir=src/aniworld/web/templates=aniworld/web/templates
+# nuitka-project: --include-data-dir=src/aniworld/web/static=aniworld/web/static
+# nuitka-project: --include-data-file=src/aniworld/.env.example=aniworld/.env.example
+# nuitka-project: --include-data-file=src/aniworld/ascii/ASCII.txt=aniworld/ascii/ASCII.txt
+# nuitka-project: --include-data-file=src/aniworld/aniskip/scripts/aniskip.lua=aniworld/aniskip/scripts/aniskip.lua
+# nuitka-project: --include-data-file=src/aniworld/aniskip/scripts/autoexit.lua=aniworld/aniskip/scripts/autoexit.lua
+# nuitka-project: --include-data-file=src/aniworld/aniskip/scripts/autostart.lua=aniworld/aniskip/scripts/autostart.lua
+
+# Platform-specific flags
+# nuitka-project-if: {OS} == "Darwin":
+#    nuitka-project: --standalone
+#    nuitka-project: --macos-create-app-bundle
+#    nuitka-project: --macos-app-name=AniWorld
+#    nuitka-project: --macos-app-icon=src/aniworld/nuitka/icon.webp
+
+# nuitka-project-if: {OS} in ("Windows", "Linux", "FreeBSD"):
+#    nuitka-project: --onefile
+#    nuitka-project: --windows-icon-from-ico=src/aniworld/nuitka/icon.webp
+
+# ========================
+# Python entrypoint
+# ========================
+
+import sys
+
+from .entry import aniworld
+
+sys.exit(aniworld())

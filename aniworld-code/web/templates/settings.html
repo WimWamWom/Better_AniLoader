@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Settings — AniWorld Downloader{% endblock %}
+{% block content %}
+<div class="settings-container">
+  <h1>Settings</h1>
+
+  <div class="settings-section">
+    <h2>Download Path</h2>
+    <div class="settings-row">
+      <input type="text" id="downloadPath" placeholder="/path/to/downloads">
+      <button onclick="saveDownloadPath()">Save</button>
+    </div>
+    <div class="settings-hint">Changes take effect immediately for new downloads</div>
+    <label class="settings-checkbox" style="display:flex;align-items:center;gap:8px;margin-top:14px;font-size:.88rem;color:#c8cad0;cursor:pointer">
+      <input type="checkbox" id="langSeparation" onchange="saveLangSeparation()" style="accent-color:#2563eb;cursor:pointer">
+      Separate languages into folders
+    </label>
+    <div class="settings-hint">When enabled, downloads are organized into subfolders by language (e.g. german-dub/, english-sub/)</div>
+    <label class="settings-checkbox" style="display:flex;align-items:center;gap:8px;margin-top:14px;font-size:.88rem;color:#c8cad0;cursor:pointer">
+      <input type="checkbox" id="disableEnglishSub" onchange="saveDisableEnglishSub()" style="accent-color:#2563eb;cursor:pointer">
+      Disable English Sub downloads
+    </label>
+    <div class="settings-hint">When enabled, English Sub is hidden from the language selector and cannot be downloaded</div>
+  </div>
+
+  {% if auth_enabled %}
+  <div class="settings-section">
+    <h2>User Management</h2>
+
+    {% if not force_sso %}
+    <div class="add-user-form" style="border:none;padding:0;margin-bottom:16px">
+      <h3>Add User</h3>
+      <div class="add-user-row">
+        <input type="text" id="newUsername" placeholder="Username">
+        <input type="password" id="newPassword" placeholder="Password">
+        <select id="newRole">
+          <option value="user">User</option>
+          <option value="admin">Admin</option>
+        </select>
+        <button onclick="addUser()">Add</button>
+      </div>
+    </div>
+    {% endif %}
+
+    <table class="user-table" id="userTable">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Username</th>
+          <th>Role</th>
+          <th>Auth</th>
+          <th>Created</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="userTableBody"></tbody>
+    </table>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='settings.js') }}"></script>
+{% endblock %}
