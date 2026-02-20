@@ -14,6 +14,7 @@ RUN apt-get update && apt-get install -y \
 # Python-Abhängigkeiten kopieren und installieren
 COPY requirements.txt .
 RUN pip install --no-cache-dir --user -r requirements.txt
+RUN pip install --upgrade git+https://github.com/phoenixthrush/AniWorld-Downloader.git@models#egg=aniworld
 
 # Finales Image
 FROM python:3.11-slim
