@@ -1,0 +1,42 @@
+# AniLoader default configuration
+# Copy to data/config.yaml and adjust to your needs.
+
+download_path: "./Downloads"
+default_language: "German Dub"
+
+# Language priority for fallback (first match wins)
+languages_priority:
+  - "German Dub"
+  - "German Sub"
+  - "English Sub"
+  - "English Dub"
+
+# Folder organisation: "standard" or "separate"
+folder_mode: "standard"
+
+# Paths for "separate" mode (leave empty to use defaults)
+anime_path: ""
+series_path: ""
+movies_path: ""
+
+logging:
+  level: "INFO"           # DEBUG | INFO | WARNING | ERROR | CRITICAL
+  max_file_size_mb: 10
+  backup_count: 5
+
+server:
+  host: "0.0.0.0"
+  port: 5050
+
+rate_limit:
+  requests_per_second: 2
+  delay_between_downloads: 5
+
+# Auto-start a download mode when the server starts (null = disabled)
+autostart_mode: null      # default | german | new | check
+
+# Warn if less than this many GB free
+min_free_gb: 100.0
+
+# Re-fetch series titles from web on startup
+refresh_titles_on_start: false
